@@ -10,14 +10,13 @@ def _():
     import pandas as pd
     import altair as alt
     import numpy as np
-    from pathlib import Path
-    return Path, alt, mo, np, pd
+    return alt, mo, np, pd
 
 
 @app.cell
-def _(Path, pd):
+def _(mo, pd):
     def _():
-        files_names = [
+        files = [
             "2017-kummulativ.csv",
             "2018-kummulativ.csv",
             "2019-kummulativ.csv",
@@ -27,9 +26,12 @@ def _(Path, pd):
             "2023-kummulativ.csv",
             "2024-kummulativ.csv",
         ]
-        files = [Path("./public") / file for file in files_names]
+
         for file in files:
-            df = pd.read_csv(file, parse_dates=["Zeitraum"])
+            df = pd.read_csv(
+                (mo.notebook_location() / "public" / file),
+                parse_dates=["Zeitraum"],
+            )
 
             # Calculate absolute values per library
             cols = ["Entleihungen", "Besucher", "aktivierte Ausweise"]
@@ -38,7 +40,7 @@ def _(Path, pd):
             # Format output and save
             df["Zeitraum"] = df["Zeitraum"].dt.strftime("%Y-%m")
             df.sort_values(["Zeitraum", "Bibliothek"]).to_csv(
-                f"{file.name[:4]}-absolut.csv", index=False
+                f"{file[:4]}-absolut.csv", index=False
             )
 
 
