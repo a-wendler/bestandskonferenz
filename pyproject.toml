@@ -8,7 +8,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "marimo (>=0.10.17,<0.11.0)",
+    "marimo (>=0.11.0)",
     "pandas (>=2.2.3,<3.0.0)",
     "altair (>=5.5.0,<6.0.0)"
 ]

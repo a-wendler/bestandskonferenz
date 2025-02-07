@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.10.17"
+__generated_with = "0.11.0"
 app = marimo.App(width="medium", app_title="LSB Bestandskonferenz")
 
 
@@ -10,11 +10,12 @@ def _():
     import pandas as pd
     import altair as alt
     import numpy as np
-    return alt, mo, np, pd
+    import urllib.request
+    return alt, mo, np, pd, urllib
 
 
 @app.cell
-def _(mo, pd):
+def _(mo, pd, urllib):
     def _():
         files = [
             "2017-kummulativ.csv",
@@ -28,10 +29,13 @@ def _(mo, pd):
         ]
 
         for file in files:
-            df = pd.read_csv(
-                (mo.notebook_location() / "public" / file),
-                parse_dates=["Zeitraum"],
-            )
+            with urllib.request.urlopen(
+                mo.notebook_location() / "public" / file
+            ) as f:
+                df = pd.read_csv(
+                    f,
+                    parse_dates=["Zeitraum"],
+                )
 
             # Calculate absolute values per library
             cols = ["Entleihungen", "Besucher", "aktivierte Ausweise"]
