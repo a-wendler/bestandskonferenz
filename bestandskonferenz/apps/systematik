@@ -1,0 +1,72 @@
+0079	W eP	ePaper (Genios)
+0080	X eB	eBook (Onleihe)
+0081	X eA	eAudio (Onleihe)
+0082	X eV	eVideo (Onleihe)
+0083	X eMu	eMusic (Onleihe)
+0084	X eP	ePaper (Onleihe)
+0085	X eMa	eMagazin (Onleihe)
+0086	Y eV	eVideo (Filmfriend)
+0087	Z eA	eAudio (Overdrive)
+0088	Z eV	eVideo (Overdrive)
+0089	Z eB	eBook (Overdrive)
+0100	Bell Erw	Belletristik Erw
+0110	Bell Ju	Belletristik Jugend
+0120	Bell REG	Belletristik REG
+0130	Bell Kin	Belletristik Kinder
+0140	BellMus	Belletristik Musik
+0200	CD Belle	CD Belletristik
+0210	CD KAB	CD KAB
+0220	CD Kinde	CD Kinder
+0230	CD Ju	CD Jugend
+0240	CD Mus	CD Musik
+0300	CDRomBel	CD-Rom Belletristik
+0310	CDRomKAB	CD-Rom KAB
+0320	CDRom Ju	CD-Rom Jugend
+0330	CDRomKin	CD-Rom Kinder
+0340	CDRomMus	CD-Rom Musik
+0400	DVD Bell	DVD Belletristik
+0410	DVD KAB	DVD KAB
+0420	DVD Ju	DVD Jugend
+0430	DVD Kin	DVD Kinder
+0440	DVD Mus	DVD Musik
+0500	eMed Erw	eMedium Erwachsene
+0510	eMed Ki	eMedium Kinder
+0520	eMed Ju	eMedium Jugend
+0540	eMed Mus	eMedium Musik
+0600	Fachl Er	Fachliteratur Erwachsene
+0610	Fachl Ju	Fachliteratur Jugend
+0620	FachlMus	Fachliteratur Musik
+0630	FachlKin	Fachliteratur Kinder
+0640	Fachl De	Fachlit Erwachsene Demokratie
+0800	Mkom Bel	Medienkombination Belletristik Erw.
+0810	Mkom KAB	Medienkombination KAB
+0820	Mkom Mus	Medienkombination Musik
+0830	Mkom REG	Medienkombination REG
+0840	Mkom Ki	Medienkombination Kinder
+0900	Noten	Noten
+1000	Spiel	Spiele
+1100	Video	Videokassette
+1200	ZeitsErw	Zeitschriften Erwachsene
+1210	ZeitsJu	Zeitschriften Jugend
+1220	Zeits Ki	Zeitschriften Kinder
+1230	ZeitsMus	Zeitschriften Musik
+1300	Dias	Dias
+1400	Film	Film
+1500	Grafik	Grafik (Artothek)
+1600	Schallpl	Schallplatte
+1700	Ver	Verschiedenes (außer Kibi + Mubi)
+1710	VerMu	Verschiedenes Mubi
+1720	Ver Ki	Verschiedenes Kibi
+1730	Ver Geg	Verschiedenes Gegenstand (BdD)
+1800	Kas	TonbandKassette
+2000	OD	Online-Dokument
+9001	Ges Bell	Summe I (Belletristik)
+9002	GesKilit	Summe II (Kinderliteratur)
+9003	Ges Fach	Summe III (Fachliteratur)
+9005	Ges Zeit	Summe V (Zeitschriften)
+9010	Ges CD	Summe IV CD
+9011	Ges CDRo	Summe IV CDRom
+9012	Ges DVD	Summe IV DVD
+9013	Ges MK	Summe IV MedienKomb
+9014	Ges eMed	Summe IV eMedien
+9015	Ges Ver	Summe Verschiedenes
