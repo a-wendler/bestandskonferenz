@@ -67,7 +67,7 @@ def _(pd):
     df = pd.concat(
         [
             pd.read_csv(
-                file,
+                mo.notebook_location() / file,
                 dtype={
                     "Besucher": "Int64",
                     "Entleihungen": "Int64",
