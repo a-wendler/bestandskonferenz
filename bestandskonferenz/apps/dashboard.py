@@ -53,7 +53,7 @@ def _(mo, pd):
 
 
 @app.cell
-def _(pd):
+def _(mo, pd):
     files = [
         "2017-absolut.csv",
         "2018-absolut.csv",
@@ -351,20 +351,6 @@ def _(
 
 
 @app.cell
-def _(mo):
-    mo.md(
-        r"""
-        zu stellende Fragen:
-
-        - welche Online-Dienste sollen nicht mitgerechnet werden (Website, Katalog, Social Media)
-        - welcher Dienst ist der Treiber bei den Entleihungen?
-        - Darstellung des Verlaufs der Standardabweichungen: https://altair-viz.github.io/user_guide/transform/window.html
-        """
-    )
-    return
-
-
-@app.cell
 def _(pd):
     buchdaten = pd.read_csv("buchdaten.csv")
     buchdaten["exemplare"] = buchdaten.groupby("katkey")["katkey"].transform(
@@ -449,7 +435,7 @@ def _(mo):
 @app.cell
 def _(mo):
     vergleichswert = mo.ui.dropdown(
-        ["Umschlag", "Gesamt", "2024", "2025", "Preis pro Entleihung"],
+        {"Umschlag":"Umschlag", "Gesamtentleihungen":"Gesamt", "Entleihungen 2024":"2024", "Entleihungen 2025":"2025", "Preis pro Entleihung":"Preis pro Entleihung", "Exemplare im Bestand":"exemplare"},
         value="Umschlag",
     )
     vergleichswert
@@ -542,12 +528,6 @@ def _(alt, pd, umsatz_systematik, vergleichswert):
 
 @app.cell
 def _(mo):
-    mo.md(r"""- warum haben wir nur 274.000 Entleihungen, wenn man die Spalte Vor-Jahr oder VorVor-Jahr zusammenrechnet -> dürfte an Filterkriterium liegen: Aufnahmedatum nur in 2024""")
-    return
-
-
-@app.cell
-def _(mo):
     mo.md(r"""# Online - Offline""")
     return
 
@@ -575,7 +555,7 @@ def _(onleihe):
         }
     )
     onleihe_kategorien["Umschlag 2024"] = (
-        onleihe_kategorien["Ausleihen 2024"] / onleihe_kategorien["Bestand 2024"]
+        onleihe_kategorien["Ausleihen 2024"] / onleihe_kategorien["Bestand 2024"] * .75
     )
 
     onleihe_kategorien["Preis pro Entleihung"] = (
@@ -594,6 +574,7 @@ def _(mo):
             "Ausleihen 2023",
             "Ausleihen 2024",
             "Preis pro Entleihung",
+            "Bestand 2024"
         ],
         value="Umschlag 2024",
     )
@@ -675,6 +656,17 @@ def _(alt, onleihe_kategorien, onleihe_vergleichswert, pd):
         onleihe_umschlag_chart,
         onleihe_umschlag_max,
     )
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""# Bestleiher 2024""")
+    return
+
+
+@app.cell
+def _():
+    return
 
 
 if __name__ == "__main__":
