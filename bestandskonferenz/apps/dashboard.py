@@ -435,7 +435,14 @@ def _(mo):
 @app.cell
 def _(mo):
     vergleichswert = mo.ui.dropdown(
-        {"Umschlag":"Umschlag", "Gesamtentleihungen":"Gesamt", "Entleihungen 2024":"2024", "Entleihungen 2025":"2025", "Preis pro Entleihung":"Preis pro Entleihung", "Exemplare im Bestand":"exemplare"},
+        {
+            "Umschlag": "Umschlag",
+            "Gesamtentleihungen": "Gesamt",
+            "Entleihungen 2024": "2024",
+            "Entleihungen 2025": "2025",
+            "Preis pro Entleihung": "Preis pro Entleihung",
+            "Exemplare im Bestand": "exemplare",
+        },
         value="Umschlag",
     )
     vergleichswert
@@ -555,7 +562,9 @@ def _(onleihe):
         }
     )
     onleihe_kategorien["Umschlag 2024"] = (
-        onleihe_kategorien["Ausleihen 2024"] / onleihe_kategorien["Bestand 2024"] * .75
+        onleihe_kategorien["Ausleihen 2024"]
+        / onleihe_kategorien["Bestand 2024"]
+        * 0.75
     )
 
     onleihe_kategorien["Preis pro Entleihung"] = (
@@ -574,7 +583,7 @@ def _(mo):
             "Ausleihen 2023",
             "Ausleihen 2024",
             "Preis pro Entleihung",
-            "Bestand 2024"
+            "Bestand 2024",
         ],
         value="Umschlag 2024",
     )
@@ -660,13 +669,288 @@ def _(alt, onleihe_kategorien, onleihe_vergleichswert, pd):
 
 @app.cell
 def _(mo):
-    mo.md(r"""# Bestleiher 2024""")
+    mo.md(
+        r"""
+        # Bestleiher 2024
+
+        In dieser Auswertung kann die Anzahl der ausleihstärksten Medien analysiert werden, die sowohl in der Onleihe als auch im physischen Bestand zu finden sind. Exemplare, Entleihungen und eingesetztes Budget werden analysiert.
+        """
+    )
     return
 
 
 @app.cell
-def _():
-    return
+def _(mo):
+    anzahl_bestleiher = mo.ui.slider(
+        10, 200, 10, value=10, label="Anzahl der Bestleiher auswerten"
+    )
+    anzahl_bestleiher
+    return (anzahl_bestleiher,)
+
+
+@app.cell
+def _(anzahl_bestleiher, gesamtdaten, onleihe, pd):
+    # Create a proper copy of the merged DataFrame first
+    comparison_df = pd.merge(
+        gesamtdaten.groupby("Titel").sum(),
+        onleihe[onleihe["Format"] != "eAudio"],
+        on="Titel",
+        suffixes=("_gesamtdaten", "_onleihe"),
+    ).copy()
+
+    comparison_df.rename(
+        columns={
+            "Gesamt": "Loans_gesamtdaten",
+            "Ausleihen gesamt": "Loans_onleihe",
+            "exemplare": "Copies_gesamtdaten",
+            "Bestand 2024": "Copies_onleihe",
+            "Bestellpreis_gesamtdaten": "Price_gesamtdaten",
+            "Bestellpreis_onleihe": "Price_onleihe",
+        },
+        inplace=True,
+    )
+
+    # Calculate price per loan using .loc for explicit assignment
+    comparison_df.loc[:, "Price_per_Loan_gesamtdaten"] = (
+        comparison_df["Price_gesamtdaten"] / comparison_df["Loans_gesamtdaten"]
+    )
+    comparison_df.loc[:, "Price_per_Loan_onleihe"] = (
+        comparison_df["Price_onleihe"] / comparison_df["Loans_onleihe"]
+    )
+
+    comparison_df.loc[:, "Loans Sum"] = (
+        comparison_df["Loans_onleihe"] + comparison_df["Loans_gesamtdaten"]
+    )
+    comparison_df = comparison_df.nlargest(anzahl_bestleiher.value, "Loans Sum")
+
+    # Then proceed with your scatter plot code...
+    return (comparison_df,)
+
+
+@app.cell
+def _(alt, comparison_df, pd):
+    # Calculate the difference between e-book loans and physical book loans
+    comparison_df["Loan_Difference"] = (
+        comparison_df["Loans_onleihe"] - comparison_df["Loans_gesamtdaten"]
+    )
+
+    # Count the number of items above the diagonal line (e-book loans > physical book loans)
+    above_line = comparison_df[comparison_df["Loan_Difference"] > 0].shape[0]
+
+    # Count the number of items below the diagonal line (e-book loans < physical book loans)
+    below_line = comparison_df[comparison_df["Loan_Difference"] < 0].shape[0]
+
+    # Count the number of items on the diagonal line (e-book loans = physical book loans)
+    on_line = comparison_df[comparison_df["Loan_Difference"] == 0].shape[0]
+
+    print(
+        f"Number of items above the line (e-books > physical books): {above_line}"
+    )
+    print(
+        f"Number of items below the line (e-books < physical books): {below_line}"
+    )
+    print(f"Number of items on the line (e-books = physical books): {on_line}")
+
+    # Create a scatter plot comparing loans between formats
+    loans_scatter = (
+        alt.Chart(comparison_df)
+        .mark_circle(size=100)
+        .encode(
+            x=alt.X("Loans_gesamtdaten:Q", title="Physical Book Loans"),
+            y=alt.Y("Loans_onleihe:Q", title="E-Book Loans"),
+            tooltip=["Titel", "Loans_gesamtdaten", "Loans_onleihe"],
+        )
+        .properties(
+            width=400,
+            height=400,
+            title="Comparison of Loans: Physical Books vs E-Books",
+        )
+    )
+
+    # Add a diagonal line for reference (where values would be equal)
+    diagonal = (
+        alt.Chart(
+            pd.DataFrame(
+                {
+                    "x": [
+                        0,
+                        comparison_df[["Loans_gesamtdaten", "Loans_onleihe"]]
+                        .max()
+                        .max(),
+                    ],
+                    "y": [
+                        0,
+                        comparison_df[["Loans_gesamtdaten", "Loans_onleihe"]]
+                        .max()
+                        .max(),
+                    ],
+                }
+            )
+        )
+        .mark_line(color="red", strokeDash=[5, 5])
+        .encode(x="x", y="y")
+    )
+
+    loans_scatter + diagonal
+    return above_line, below_line, diagonal, loans_scatter, on_line
+
+
+@app.cell
+def _(alt, comparison_df):
+    max_price = max(
+        comparison_df["Price_gesamtdaten"].max(),
+        comparison_df["Price_onleihe"].max(),
+    )
+    min_price = min(
+        comparison_df["Price_gesamtdaten"].min(),
+        comparison_df["Price_onleihe"].min(),
+    )
+
+    # For physical books
+    size = alt.Size(
+        "Price_gesamtdaten:Q",
+        scale=alt.Scale(domain=[min_price, max_price], range=[50, 500]),
+        legend=alt.Legend(title="Gesamtpreis (€)"),
+    )
+
+    # For e-books
+    size = alt.Size(
+        "Price_onleihe:Q",
+        scale=alt.Scale(domain=[min_price, max_price], range=[50, 500]),
+        legend=alt.Legend(title="Gesamtpreis (€)"),
+    )
+
+
+    # Calculate price per loan for both physical and e-books
+    comparison_df["Price_per_Loan_gesamtdaten"] = (
+        comparison_df["Price_gesamtdaten"] / comparison_df["Loans_gesamtdaten"]
+    )
+    comparison_df["Price_per_Loan_onleihe"] = (
+        comparison_df["Price_onleihe"] / comparison_df["Loans_onleihe"]
+    )
+
+    # Create the scatter plot for physical books
+    physical_plot = (
+        alt.Chart(comparison_df)
+        .mark_circle()
+        .encode(
+            x=alt.X("Copies_gesamtdaten:Q", title="Exemplare"),
+            y=alt.Y("Loans_gesamtdaten:Q", title="Entleihungen"),
+            size=alt.Size(
+                "Price_gesamtdaten:Q",
+                scale=alt.Scale(range=[50, 500]),
+                legend=alt.Legend(title="Gesamtpreis (€)"),
+            ),
+            color=alt.Color(
+                "Price_per_Loan_gesamtdaten:Q",
+                scale=alt.Scale(scheme="turbo"),
+                legend=alt.Legend(title="Preis pro Entleihung (€)"),
+            ),
+            tooltip=[
+                "Titel",
+                "Copies_gesamtdaten",
+                "Loans_gesamtdaten",
+                "Price_gesamtdaten",
+                "Price_per_Loan_gesamtdaten",
+            ],
+        )
+        .properties(
+            width=550,
+            height=550,
+            title="Physische Bücher: Exemplare, Entleihungen & Preise",
+        )
+    )
+
+    # Create the scatter plot for e-books
+    ebook_plot = (
+        alt.Chart(comparison_df)
+        .mark_circle()
+        .encode(
+            x=alt.X("Copies_onleihe:Q", title="Exemplare"),
+            y=alt.Y("Loans_onleihe:Q", title="Entleihungen"),
+            size=alt.Size(
+                "Price_onleihe:Q",
+                scale=alt.Scale(range=[50, 500]),
+                legend=alt.Legend(title="Gesamtpreis (€)"),
+            ),
+            color=alt.Color(
+                "Price_per_Loan_onleihe:Q",
+                scale=alt.Scale(scheme="turbo"),
+                legend=alt.Legend(title="Preis pro Entleihung (€)"),
+            ),
+            tooltip=[
+                "Titel",
+                "Copies_onleihe",
+                "Loans_onleihe",
+                "Price_onleihe",
+                "Price_onleihe",
+            ],
+        )
+        .properties(
+            width=550,
+            height=550,
+            title="E-Books: Exemplare, Entleihungen & Preise",
+        )
+    )
+
+    # Combine the plots side by side
+    scatter_combined_plot = combined_plot = alt.hconcat(
+        physical_plot, ebook_plot
+    ).resolve_scale(
+        color="independent",
+        size="shared",  # Ensure uniform scaling of size between the two plots
+    )
+
+    scatter_combined_plot
+    return (
+        combined_plot,
+        ebook_plot,
+        max_price,
+        min_price,
+        physical_plot,
+        scatter_combined_plot,
+        size,
+    )
+
+
+@app.cell
+def _(comparison_df, pd):
+    # Aggregate sum for physical books
+    physical_summary = {
+        "Ausleihen gesamt": comparison_df["Loans_gesamtdaten"].sum(),
+        "Exemplare gesamt": comparison_df["Copies_gesamtdaten"].sum(),
+        "Gesamtpreis": comparison_df["Price_gesamtdaten"].sum(),
+    }
+
+    # Aggregate sum for e-books
+    ebook_summary = {
+        "Ausleihen gesamt": comparison_df["Loans_onleihe"].sum(),
+        "Exemplare gesamt": comparison_df["Copies_onleihe"].sum(),
+        "Gesamtpreis": comparison_df["Price_onleihe"].sum(),
+    }
+    # Create a DataFrame for the summary
+    summary_table = pd.DataFrame(
+        {"Physische Bücher": physical_summary, "E-Books": ebook_summary}
+    )
+
+    # Transpose the table for better readability
+    summary_table = summary_table.T
+
+    # Format the numbers for German conventions
+    summary_table["Gesamtpreis"] = summary_table["Gesamtpreis"].apply(
+        lambda x: f"€{x:,.2f}".replace(",", "X")
+        .replace(".", ",")
+        .replace("X", ".")
+    )
+    summary_table["Ausleihen gesamt"] = summary_table["Ausleihen gesamt"].apply(
+        lambda x: f"{x:,.0f}".replace(",", ".")
+    )
+    summary_table["Exemplare gesamt"] = summary_table["Exemplare gesamt"].apply(
+        lambda x: f"{x:,.0f}".replace(",", ".")
+    )
+
+    summary_table
+    return ebook_summary, physical_summary, summary_table
 
 
 if __name__ == "__main__":
