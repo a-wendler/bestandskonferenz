@@ -671,9 +671,11 @@ def _(alt, onleihe_kategorien, onleihe_vergleichswert, pd):
 def _(mo):
     mo.md(
         r"""
-        # Bestleiher 2024
+        # Bestleiher
 
-        In dieser Auswertung kann die Anzahl der ausleihstärksten Medien analysiert werden, die sowohl in der Onleihe als auch im physischen Bestand zu finden sind. Exemplare, Entleihungen und eingesetztes Budget werden analysiert.
+        In dieser Auswertung kann die Anzahl der ausleihstärksten Medien analysiert werden, die __sowohl in der Onleihe als auch im physischen Bestand__ zu finden sind. Exemplare, Entleihungen und eingesetztes Budget werden analysiert.
+
+        Es werden die Top x Medien ausgewertet, die sowohl online als auch offline verfügbar sind.
         """
     )
     return
@@ -682,8 +684,14 @@ def _(mo):
 @app.cell
 def _(mo):
     anzahl_bestleiher = mo.ui.slider(
-        10, 200, 10, value=10, label="Anzahl der Bestleiher auswerten"
+        10,
+        200,
+        10,
+        value=10,
+        label="Anzahl der ausgewerteten online und offline verfügbaren Bestleiher auswählen",
+        show_value=True,
     )
+
     anzahl_bestleiher
     return (anzahl_bestleiher,)
 
@@ -728,6 +736,12 @@ def _(anzahl_bestleiher, gesamtdaten, onleihe, pd):
 
 
 @app.cell
+def _(mo):
+    mo.md(r"""Dieses Diagramm vergleicht die Ausleihzahlen desselben Titels im physischen Bestand und in der Onleihe. Titel oberhalb der roten diagonalen Linie laufen in der Onleihe besser, Titel unterhalb der Linie laufen physisch besser.""")
+    return
+
+
+@app.cell
 def _(alt, comparison_df, pd):
     # Calculate the difference between e-book loans and physical book loans
     comparison_df["Loan_Difference"] = (
@@ -756,14 +770,18 @@ def _(alt, comparison_df, pd):
         alt.Chart(comparison_df)
         .mark_circle(size=100)
         .encode(
-            x=alt.X("Loans_gesamtdaten:Q", title="Physical Book Loans"),
-            y=alt.Y("Loans_onleihe:Q", title="E-Book Loans"),
-            tooltip=["Titel", "Loans_gesamtdaten", "Loans_onleihe"],
+            x=alt.X("Loans_gesamtdaten:Q", title="Entleihungen physisch"),
+            y=alt.Y("Loans_onleihe:Q", title="Entleihungen Onleihe"),
+            tooltip=[
+                alt.Tooltip("Titel"),
+                alt.Tooltip("Loans_gesamtdaten", title="Entleihungen physisch"),
+                alt.Tooltip("Loans_onleihe", title="Entleihungen digital"),
+            ],
         )
         .properties(
             width=400,
             height=400,
-            title="Comparison of Loans: Physical Books vs E-Books",
+            title="Vergleich der Entleihungen: Physischer Bestand & E-Books (Onleihe)",
         )
     )
 
@@ -796,37 +814,40 @@ def _(alt, comparison_df, pd):
 
 
 @app.cell
+def _(mo):
+    mo.md(
+        """
+        Im folgende Diagram werden dieselben top x Titel wie oben getrennt nach physischem Bestand und Onleihe dargestellt.
+
+        Auf der __x-Achse__ ist die Anzahl der __Exemplare__ im Bestand im jeweiligen Format zu sehen.
+
+        Auf der __y-Achse__ ist die Gesamtzahl der __Entleihungen__, die mit diesem Titel erzielt wurde, dargestellt.
+
+        Die __Größe der Punkte__ repräsentiert den Gesamtbetrag, der für den Titel im jeweiligen Format investiert wurde.
+
+        Die Farbe der Punkte zeigt den __Preis pro Ausleihe__.
+        """
+    )
+    return
+
+
+@app.cell
 def _(alt, comparison_df):
-    max_price = max(
-        comparison_df["Price_gesamtdaten"].max(),
-        comparison_df["Price_onleihe"].max(),
-    )
-    min_price = min(
-        comparison_df["Price_gesamtdaten"].min(),
-        comparison_df["Price_onleihe"].min(),
-    )
-
-    # For physical books
-    size = alt.Size(
-        "Price_gesamtdaten:Q",
-        scale=alt.Scale(domain=[min_price, max_price], range=[50, 500]),
-        legend=alt.Legend(title="Gesamtpreis (€)"),
+    # Calculate the min and max values for the x and y axes across both datasets
+    # min_x = min(comparison_df["Copies_gesamtdaten"].min(), comparison_df["Copies_onleihe"].min())
+    min_x = 0
+    max_x = max(
+        comparison_df["Copies_gesamtdaten"].max(),
+        comparison_df["Copies_onleihe"].max(),
     )
 
-    # For e-books
-    size = alt.Size(
-        "Price_onleihe:Q",
-        scale=alt.Scale(domain=[min_price, max_price], range=[50, 500]),
-        legend=alt.Legend(title="Gesamtpreis (€)"),
+    min_y = min(
+        comparison_df["Loans_gesamtdaten"].min(),
+        comparison_df["Loans_onleihe"].min(),
     )
-
-
-    # Calculate price per loan for both physical and e-books
-    comparison_df["Price_per_Loan_gesamtdaten"] = (
-        comparison_df["Price_gesamtdaten"] / comparison_df["Loans_gesamtdaten"]
-    )
-    comparison_df["Price_per_Loan_onleihe"] = (
-        comparison_df["Price_onleihe"] / comparison_df["Loans_onleihe"]
+    max_y = max(
+        comparison_df["Loans_gesamtdaten"].max(),
+        comparison_df["Loans_onleihe"].max(),
     )
 
     # Create the scatter plot for physical books
@@ -834,8 +855,16 @@ def _(alt, comparison_df):
         alt.Chart(comparison_df)
         .mark_circle()
         .encode(
-            x=alt.X("Copies_gesamtdaten:Q", title="Exemplare"),
-            y=alt.Y("Loans_gesamtdaten:Q", title="Entleihungen"),
+            x=alt.X(
+                "Copies_gesamtdaten:Q",
+                title="Exemplare physisch",
+                scale=alt.Scale(domain=[min_x, max_x]),
+            ),
+            y=alt.Y(
+                "Loans_gesamtdaten:Q",
+                title="Entleihungen physisch",
+                scale=alt.Scale(domain=[min_y, max_y]),
+            ),
             size=alt.Size(
                 "Price_gesamtdaten:Q",
                 scale=alt.Scale(range=[50, 500]),
@@ -844,19 +873,27 @@ def _(alt, comparison_df):
             color=alt.Color(
                 "Price_per_Loan_gesamtdaten:Q",
                 scale=alt.Scale(scheme="turbo"),
-                legend=alt.Legend(title="Preis pro Entleihung (€)"),
+                legend=alt.Legend(title="Preis pro Entleihung (€)", format=".2f"),
             ),
             tooltip=[
-                "Titel",
-                "Copies_gesamtdaten",
-                "Loans_gesamtdaten",
-                "Price_gesamtdaten",
-                "Price_per_Loan_gesamtdaten",
+                alt.Tooltip("Titel"),
+                alt.Tooltip("Copies_gesamtdaten", title="Exemplare physisch"),
+                alt.Tooltip("Loans_gesamtdaten", title="Entleihungen physisch"),
+                alt.Tooltip(
+                    "Price_gesamtdaten",
+                    title="Gesamtpreis physisch €",
+                    format=".2f",
+                ),
+                alt.Tooltip(
+                    "Price_per_Loan_gesamtdaten",
+                    title="Preis pro Entleihung €",
+                    format=".2f",
+                ),
             ],
         )
         .properties(
-            width=550,
-            height=550,
+            width=500,
+            height=500,
             title="Physische Bücher: Exemplare, Entleihungen & Preise",
         )
     )
@@ -866,8 +903,16 @@ def _(alt, comparison_df):
         alt.Chart(comparison_df)
         .mark_circle()
         .encode(
-            x=alt.X("Copies_onleihe:Q", title="Exemplare"),
-            y=alt.Y("Loans_onleihe:Q", title="Entleihungen"),
+            x=alt.X(
+                "Copies_onleihe:Q",
+                title="Exemplare digital",
+                scale=alt.Scale(domain=[min_x, max_x]),
+            ),
+            y=alt.Y(
+                "Loans_onleihe:Q",
+                title="Entleihungen digital",
+                scale=alt.Scale(domain=[min_y, max_y]),
+            ),
             size=alt.Size(
                 "Price_onleihe:Q",
                 scale=alt.Scale(range=[50, 500]),
@@ -876,40 +921,44 @@ def _(alt, comparison_df):
             color=alt.Color(
                 "Price_per_Loan_onleihe:Q",
                 scale=alt.Scale(scheme="turbo"),
-                legend=alt.Legend(title="Preis pro Entleihung (€)"),
+                legend=alt.Legend(title="Preis pro Entleihung (€)", format=".2f"),
             ),
             tooltip=[
-                "Titel",
-                "Copies_onleihe",
-                "Loans_onleihe",
-                "Price_onleihe",
-                "Price_onleihe",
+                alt.Tooltip("Titel"),
+                alt.Tooltip("Copies_onleihe", title="Exemplare digital"),
+                alt.Tooltip("Loans_onleihe", title="Entleihungen digital"),
+                alt.Tooltip(
+                    "Price_onleihe", title="Gesamtpreis digital €", format="(.2f"
+                ),
+                alt.Tooltip(
+                    "Price_per_Loan_onleihe",
+                    title="Preis pro Entleihung €",
+                    format="(.2f",
+                ),
             ],
         )
         .properties(
-            width=550,
-            height=550,
+            width=500,
+            height=500,
             title="E-Books: Exemplare, Entleihungen & Preise",
         )
     )
 
     # Combine the plots side by side
-    scatter_combined_plot = combined_plot = alt.hconcat(
-        physical_plot, ebook_plot
-    ).resolve_scale(
+    scatter_combined_plot = alt.hconcat(physical_plot, ebook_plot).resolve_scale(
         color="independent",
         size="shared",  # Ensure uniform scaling of size between the two plots
     )
 
     scatter_combined_plot
     return (
-        combined_plot,
         ebook_plot,
-        max_price,
-        min_price,
+        max_x,
+        max_y,
+        min_x,
+        min_y,
         physical_plot,
         scatter_combined_plot,
-        size,
     )
 
 
