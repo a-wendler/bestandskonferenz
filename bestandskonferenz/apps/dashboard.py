@@ -64,21 +64,40 @@ def _(mo, pd):
         "2023-absolut.csv",
         "2024-absolut.csv",
     ]
-    df = pd.concat(
-        [
-            pd.read_csv(
-                mo.notebook_location() / "public" / file,
-                dtype={
-                    "Besucher": "Int64",
-                    "Entleihungen": "Int64",
-                    "aktivierte Ausweise": "Int64",
-                },
-                parse_dates=["Zeitraum"],
-                index_col="Zeitraum",
-            )
-            for file in files
-        ]
-    )
+
+    try:
+        df = pd.concat(
+            [
+                pd.read_csv(
+                    mo.notebook_location() / "public" / file,
+                    dtype={
+                        "Besucher": "Int64",
+                        "Entleihungen": "Int64",
+                        "aktivierte Ausweise": "Int64",
+                    },
+                    parse_dates=["Zeitraum"],
+                    index_col="Zeitraum",
+                )
+                for file in files
+            ]
+        )
+
+    except:
+        df = pd.concat(
+            [
+                pd.read_csv(
+                    f"https://andrewendler.de/bestandskonferenz/bestandskonferenz/apps/public/{file}",
+                    dtype={
+                        "Besucher": "Int64",
+                        "Entleihungen": "Int64",
+                        "aktivierte Ausweise": "Int64",
+                    },
+                    parse_dates=["Zeitraum"],
+                    index_col="Zeitraum",
+                )
+                for file in files
+            ]
+        )
     return df, files
 
 
@@ -351,15 +370,38 @@ def _(
 
 
 @app.cell
-def _(pd):
-    buchdaten = pd.read_csv("buchdaten.csv")
-    buchdaten["exemplare"] = buchdaten.groupby("katkey")["katkey"].transform(
-        "count"
-    )
+def _(mo, pd):
+    try:
+        buchdaten = pd.read_csv(
+            mo.notebook_location() / "public" / "buchdaten_2024.csv"
+        )
+        buchdaten["exemplare"] = buchdaten.groupby("katkey")["katkey"].transform(
+            "count"
+        )
 
-    bestelldaten = pd.read_csv(
-        "bestelldaten.csv", sep=";", encoding="latin_1", decimal=",", thousands="."
-    )
+        bestelldaten = pd.read_csv(
+            mo.notebook_location() / "public" / "bestelldaten_2024.csv",
+            sep=";",
+            encoding="latin_1",
+            decimal=",",
+            thousands=".",
+        )
+    except:
+        buchdaten = pd.read_csv(
+            "https://andrewendler.de/bestandskonferenz/bestandskonferenz/apps/public/buchdaten_2024.csv"
+        )
+        buchdaten["exemplare"] = buchdaten.groupby("katkey")["katkey"].transform(
+            "count"
+        )
+
+        bestelldaten = pd.read_csv(
+            "https://andrewendler.de/bestandskonferenz/bestandskonferenz/apps/public/bestelldaten_2024.csv",
+            sep=";",
+            encoding="latin_1",
+            decimal=",",
+            thousands=".",
+        )
+
     bestelldaten["Bestellpreis"] = pd.to_numeric(
         bestelldaten["Bestellpreis"], errors="ignore"
     )
@@ -541,16 +583,16 @@ def _(mo):
 
 @app.cell
 def _(mo, pd):
-    file = "onleihe.csv"
+    try:
+        onleihe = pd.read_csv(mo.notebook_location() / "public" / "onleihe.csv")
+    except:
+        onleihe = pd.read_csv(
+            "https://andrewendler.de/bestandskonferenz/bestandskonferenz/apps/public/onleihe.csv"
+        )
 
-    # with urllib.request.urlopen(
-    with open(mo.notebook_location() / "public" / file, mode="r") as f:
-        onleihe = pd.read_csv(f)
-
-    # onleihe = pd.read_excel("onleihe.xlsx")
     onleihe["Kategorie"] = onleihe["Kategorie"].str.split(" / ").str[0]
     onleihe["Bestellpreis"] = onleihe["Einzelpreis"] * onleihe["Bestand 2024"]
-    return f, file, onleihe
+    return (onleihe,)
 
 
 @app.cell
@@ -1018,7 +1060,6 @@ def _(mo):
         können wir uns die fremdsprachige Literatur noch einmal vergegenwärtigen?
         Tooltips für die oberen Diagramme
         Farben der oberen Diagramme anders als Gesamtstatistik vergeben
-
         """
     )
     return
