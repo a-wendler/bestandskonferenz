@@ -93,7 +93,7 @@ def main() -> None:
     args = parser.parse_args()
 
     all_notebooks: List[str] = []
-    for directory in ["notebooks", "apps"]:
+    for directory in ["bestandskonferenz/notebooks", "bestandskonferenz/apps"]:
         dir_path = Path(directory)
         if not dir_path.exists():
             print(f"Warning: Directory not found: {dir_path}")
