@@ -86,7 +86,7 @@ def _(mo, pd):
         df = pd.concat(
             [
                 pd.read_csv(
-                    f"https://andrewendler.de/bestandskonferenz/bestandskonferenz/apps/public/{file}",
+                    f"https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/{file}",
                     dtype={
                         "Besucher": "Int64",
                         "Entleihungen": "Int64",
@@ -388,14 +388,14 @@ def _(mo, pd):
         )
     except:
         buchdaten = pd.read_csv(
-            "https://andrewendler.de/bestandskonferenz/bestandskonferenz/apps/public/buchdaten_2024.csv"
+            "https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/buchdaten_2024.csv"
         )
         buchdaten["exemplare"] = buchdaten.groupby("katkey")["katkey"].transform(
             "count"
         )
 
         bestelldaten = pd.read_csv(
-            "https://andrewendler.de/bestandskonferenz/bestandskonferenz/apps/public/bestelldaten_2024.csv",
+            "https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/bestelldaten_2024.csv",
             sep=";",
             encoding="latin_1",
             decimal=",",
@@ -587,7 +587,7 @@ def _(mo, pd):
         onleihe = pd.read_csv(mo.notebook_location() / "public" / "onleihe.csv")
     except:
         onleihe = pd.read_csv(
-            "https://andrewendler.de/bestandskonferenz/bestandskonferenz/apps/public/onleihe.csv"
+            "https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/onleihe.csv"
         )
 
     onleihe["Kategorie"] = onleihe["Kategorie"].str.split(" / ").str[0]
