@@ -67,7 +67,7 @@ def _(mo, pd):
     df = pd.concat(
         [
             pd.read_csv(
-                mo.notebook_location() / file,
+                mo.notebook_location() / "public" / file,
                 dtype={
                     "Besucher": "Int64",
                     "Entleihungen": "Int64",
@@ -84,7 +84,7 @@ def _(mo, pd):
 
 @app.cell
 def _(mo):
-    mo.md("""# Entwicklung allgmeiner Leistungszahlen""")
+    mo.md("""# Entwicklung allgemeiner Leistungszahlen""")
     return
 
 
@@ -428,7 +428,7 @@ def _(gesamtdaten):
 
 @app.cell
 def _(mo):
-    mo.md(r"""# Budget vs. Leistung""")
+    mo.md(r"""# Budget & Leistung physischer Bestand""")
     return
 
 
@@ -535,17 +535,22 @@ def _(alt, pd, umsatz_systematik, vergleichswert):
 
 @app.cell
 def _(mo):
-    mo.md(r"""# Online - Offline""")
+    mo.md(r"""# Budget & Leistung Onleihe""")
     return
 
 
 @app.cell
-def _(pd):
-    onleihe = pd.read_excel("onleihe.xlsx")
-    onleihe
+def _(mo, pd):
+    file = "onleihe.csv"
+
+    # with urllib.request.urlopen(
+    with open(mo.notebook_location() / "public" / file, mode="r") as f:
+        onleihe = pd.read_csv(f)
+
+    # onleihe = pd.read_excel("onleihe.xlsx")
     onleihe["Kategorie"] = onleihe["Kategorie"].str.split(" / ").str[0]
     onleihe["Bestellpreis"] = onleihe["Einzelpreis"] * onleihe["Bestand 2024"]
-    return (onleihe,)
+    return f, file, onleihe
 
 
 @app.cell
@@ -1000,6 +1005,23 @@ def _(comparison_df, pd):
 
     summary_table
     return ebook_summary, physical_summary, summary_table
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+        Todo
+
+        Bestellpreis beim ersten Vergleichsdiagramm ändern in Gesamtkosten
+        kann die Budget- vs. Leistungsgrafik nach Standorten aufgeschlüsselt werden?
+        können wir uns die fremdsprachige Literatur noch einmal vergegenwärtigen?
+        Tooltips für die oberen Diagramme
+        Farben der oberen Diagramme anders als Gesamtstatistik vergeben
+
+        """
+    )
+    return
 
 
 if __name__ == "__main__":
