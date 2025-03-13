@@ -1,4 +1,4 @@
-Haushaltsjahr;Haushaltsstufe 0;Fachgruppe;Katkey;EXEMPLARANZ;PREIS;Bestellpreis
+Haushaltsjahr;Haushaltsstufe 0;Fachgruppe;katkey;EXEMPLARANZ;PREIS;Bestellpreis
 2023;10 Verwaltungsbibliothek;"0001 Bücher";1904874;1,00;"0,00";"0,00"
 ;;;1914959;1,00;21,00;23,00
 ;;;1918019;1,00;"0,00";"0,00"
@@ -52175,7 +52175,7 @@ Haushaltsjahr;Haushaltsstufe 0;Fachgruppe;Katkey;EXEMPLARANZ;PREIS;Bestellpreis
 ;;;1916088;1,00;17,00;16,00
 ;;;1916089;1,00;20,00;20,00
 ;;;1916090;1,00;22,00;22,00
-;;;1916099;3,00;75,00;3.675,00
+;;;1916099;3,00;75,00;75,00
 ;;;1916101;3,00;42,00;39,00
 ;;;1916103;3,00;42,00;39,00
 ;;;1916105;2,00;48,00;48,00
@@ -54981,5 +54981,3 @@ Haushaltsjahr;Haushaltsstufe 0;Fachgruppe;Katkey;EXEMPLARANZ;PREIS;Bestellpreis
 ;;;1938662;1,00;12,00;13,00
 ;;;1938663;1,00;12,00;13,00
 ;;;1938887;1,00;18,00;20,00
-Summe;;;;67.838,00;972.104,00;1.059.342,00
-

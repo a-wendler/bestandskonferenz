@@ -10,8 +10,8 @@ def _():
     import pandas as pd
     import altair as alt
     import numpy as np
-    import urllib.request
-    return alt, mo, np, pd, urllib
+    from dateutil import relativedelta
+    return alt, mo, np, pd, relativedelta
 
 
 @app.cell
@@ -148,8 +148,6 @@ def _(df, mo):
         "Brockhaus",
         "Medici.tv",
         "linguaTV",
-        "scoyo",
-        "Tilasto",
     ]
 
     dimension = mo.ui.dropdown(
@@ -371,41 +369,67 @@ def _(
 
 @app.cell
 def _(mo, pd):
+    jahre = ["2023", "2024"]
+
     try:
-        buchdaten = pd.read_csv(
-            mo.notebook_location() / "public" / "buchdaten_2024.csv"
-        )
-        buchdaten["exemplare"] = buchdaten.groupby("katkey")["katkey"].transform(
-            "count"
+        buchdaten = pd.concat(
+            [
+                pd.read_csv(
+                    mo.notebook_location() / "public" / f"buchdaten_{jahr}.csv",
+                    low_memory=False,
+                )
+                for jahr in jahre
+            ]
         )
 
-        bestelldaten = pd.read_csv(
-            mo.notebook_location() / "public" / "bestelldaten_2024.csv",
-            sep=";",
-            encoding="latin_1",
-            decimal=",",
-            thousands=".",
+        bestelldaten = pd.concat(
+            [
+                pd.read_csv(
+                    mo.notebook_location() / "public" / f"bestelldaten_{jahr}.csv",
+                    sep=";",
+                    encoding="latin_1",
+                    decimal=",",
+                    thousands=".",
+                    low_memory=False,
+                )
+                for jahr in jahre
+            ]
         )
+
     except:
-        buchdaten = pd.read_csv(
-            "https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/buchdaten_2024.csv"
-        )
-        buchdaten["exemplare"] = buchdaten.groupby("katkey")["katkey"].transform(
-            "count"
-        )
-
-        bestelldaten = pd.read_csv(
-            "https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/bestelldaten_2024.csv",
-            sep=";",
-            encoding="latin_1",
-            decimal=",",
-            thousands=".",
+        buchdaten = pd.concat(
+            [
+                pd.read_csv(
+                    mo.notebook_location()
+                    / "public"
+                    / f"https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/buchdaten_{jahr}.csv",
+                    low_memory=False,
+                )
+                for jahr in jahre
+            ]
         )
 
+        bestelldaten = pd.concat(
+            [
+                pd.read_csv(
+                    f"https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/buchdaten_{jahr}.csv",
+                    sep=";",
+                    encoding="latin_1",
+                    decimal=",",
+                    thousands=".",
+                    low_memory=False,
+                )
+                for jahr in jahre
+            ]
+        )
+
+    buchdaten["exemplare"] = buchdaten.groupby("katkey")["katkey"].transform(
+        "count"
+    )
     bestelldaten["Bestellpreis"] = pd.to_numeric(
         bestelldaten["Bestellpreis"], errors="ignore"
     )
-
+    buchdaten["2023_2024"] = buchdaten["2023"] + buchdaten["2024"]
     buchdaten_grouped = buchdaten.groupby("katkey", as_index=False).agg(
         {
             "Geistiger Schöpfer": "first",
@@ -413,9 +437,7 @@ def _(mo, pd):
             "Signatur": "first",
             "2. Signatur": "first",
             "Gesamt": "sum",
-            "lfd. Jahr": "sum",
-            "Vor-Jahr": "sum",
-            "VorVor-Jahr": "sum",
+            "2023_2024": "sum",
             "Titel": "first",
             "datumaufn": "first",
             "Mediennummer": "first",
@@ -435,15 +457,15 @@ def _(mo, pd):
         buchdaten_grouped, bestelldaten_grouped, on="katkey", how="left"
     )
     gesamtdaten = gesamtdaten[gesamtdaten["katkey"] != 1952225]
-    gesamtdaten = gesamtdaten.rename(
-        columns={"lfd. Jahr": "2025", "Vor-Jahr": "2024", "VorVor-Jahr": "2023"}
-    )
+    gesamtdaten = gesamtdaten[gesamtdaten["Systematik"] != 200]
+    gesamtdaten.dropna(subset=["Bestellpreis"], inplace=True)
     return (
         bestelldaten,
         bestelldaten_grouped,
         buchdaten,
         buchdaten_grouped,
         gesamtdaten,
+        jahre,
     )
 
 
@@ -453,17 +475,15 @@ def _(gesamtdaten):
         {
             "exemplare": "sum",
             "Gesamt": "sum",
-            "2023": "sum",
-            "2024": "sum",
-            "2025": "sum",
+            "2023_2024": "sum",
             "Bestellpreis": "sum",
         }
     )
     umsatz_systematik["Umschlag"] = (
-        umsatz_systematik["2024"] / umsatz_systematik["exemplare"]
+        umsatz_systematik["2023_2024"] / umsatz_systematik["exemplare"]
     )
     umsatz_systematik["Preis pro Entleihung"] = (
-        umsatz_systematik["Bestellpreis"] / umsatz_systematik["2024"]
+        umsatz_systematik["Bestellpreis"] / umsatz_systematik["2023_2024"]
     )
     return (umsatz_systematik,)
 
@@ -480,8 +500,7 @@ def _(mo):
         {
             "Umschlag": "Umschlag",
             "Gesamtentleihungen": "Gesamt",
-            "Entleihungen 2024": "2024",
-            "Entleihungen 2025": "2025",
+            "Entleihungen 2023/2024 ": "2023_2024",
             "Preis pro Entleihung": "Preis pro Entleihung",
             "Exemplare im Bestand": "exemplare",
         },
@@ -528,8 +547,11 @@ def _(alt, pd, umsatz_systematik, vergleichswert):
                 ),
                 axis=alt.Axis(format="~s"),
             ),
-            y=alt.Y("Systematik:N", title="Systematik", sort=sort_order),
+            y=alt.Y("Systematik:N", title="Systematik", sort=sort_order).axis(
+                None
+            ),
             color=alt.value("#1f77b4"),
+            tooltip=[alt.Tooltip("Value", title="Budget €", format=".2r")],
         )
     )
 
@@ -539,20 +561,36 @@ def _(alt, pd, umsatz_systematik, vergleichswert):
         .encode(
             x=alt.X(
                 "Value:Q",
-                title=vergleichswert.value,
+                title=vergleichswert.selected_key,
                 scale=alt.Scale(domain=[0, umschlag_max], nice=False),
-                axis=alt.Axis(format=".2f"),
+                axis=alt.Axis(format=".2r"),
             ),
-            y=alt.Y("Systematik:N", title=None, sort=sort_order),
+            y=alt.Y("Systematik:N", title=None, sort=sort_order).axis(None),
             color=alt.value("#ff7f0e"),
+            tooltip=[
+                alt.Tooltip(
+                    "Value", title=f"{vergleichswert.selected_key}", format=".2f"
+                )
+            ],
         )
+    )
+
+    middle = (
+        alt.Chart(chart_data)
+        .encode(
+            alt.Y("Systematik:N", sort=sort_order).axis(None),
+            alt.Text("Systematik:Q"),
+        )
+        .mark_text()
+        .properties(width=20, height=400)
     )
 
     # Combine the charts
     combined_chart = alt.hconcat(
-        bestellpreis_chart.properties(title="Bestellpreis", width=300, height=400),
+        bestellpreis_chart.properties(title="Budget", width=300, height=400),
+        middle,
         umschlag_chart.properties(
-            title=vergleichswert.value, width=300, height=400
+            title=vergleichswert.selected_key, width=300, height=400
         ),
     ).properties(
         title={
@@ -567,6 +605,7 @@ def _(alt, pd, umsatz_systematik, vergleichswert):
         bestellpreis_max,
         chart_data,
         combined_chart,
+        middle,
         sort_order,
         top_10,
         top_10_reset,
@@ -590,49 +629,43 @@ def _(mo, pd):
             "https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/onleihe.csv"
         )
 
+    onleihe["onleihe_2023_2024"] = (
+        onleihe["Ausleihen 2023"] + onleihe["Ausleihen 2024"]
+    )
     onleihe["Kategorie"] = onleihe["Kategorie"].str.split(" / ").str[0]
     onleihe["Bestellpreis"] = onleihe["Einzelpreis"] * onleihe["Bestand 2024"]
-    return (onleihe,)
 
-
-@app.cell
-def _(onleihe):
     onleihe_kategorien = onleihe.groupby("Kategorie").agg(
         {
             "Bestand 2024": "sum",
             "Vormerker 2024": "sum",
-            "Ausleihen 2022": "sum",
-            "Ausleihen 2023": "sum",
-            "Ausleihen 2024": "sum",
-            "Ausleihen gesamt": "sum",
+            "onleihe_2023_2024": "sum",
             "Bestellpreis": "sum",
         }
     )
-    onleihe_kategorien["Umschlag 2024"] = (
-        onleihe_kategorien["Ausleihen 2024"]
+    onleihe_kategorien["Umschlag 2023/2024"] = (
+        onleihe_kategorien["onleihe_2023_2024"]
         / onleihe_kategorien["Bestand 2024"]
         * 0.75
     )
 
     onleihe_kategorien["Preis pro Entleihung"] = (
-        onleihe_kategorien["Bestellpreis"] / onleihe_kategorien["Ausleihen 2024"]
+        onleihe_kategorien["Bestellpreis"]
+        / onleihe_kategorien["onleihe_2023_2024"]
     )
-    return (onleihe_kategorien,)
+    return onleihe, onleihe_kategorien
 
 
 @app.cell
 def _(mo):
     onleihe_vergleichswert = mo.ui.dropdown(
-        [
-            "Umschlag 2024",
-            "Ausleihen gesamt",
-            "Ausleihen 2022",
-            "Ausleihen 2023",
-            "Ausleihen 2024",
-            "Preis pro Entleihung",
-            "Bestand 2024",
-        ],
-        value="Umschlag 2024",
+        {
+            "Umschlag 2023/2024": "Umschlag 2023/2024",
+            "Ausleihen 2023/2024": "onleihe_2023_2024",
+            "Preis pro Entleihung": "Preis pro Entleihung",
+            "Bestand 2024": "Bestand 2024",
+        },
+        value="Umschlag 2023/2024",
     )
     onleihe_vergleichswert
     return (onleihe_vergleichswert,)
@@ -648,6 +681,10 @@ def _(alt, onleihe_kategorien, onleihe_vergleichswert, pd):
         var_name="Metric",
         value_name="Value",
     )
+
+    onleihe_chart_data = onleihe_chart_data[
+        onleihe_chart_data["Kategorie"] != "eLearning"
+    ]
 
     # Calculate max values for each metric to set appropriate domains
     onleihe_bestellpreis_max = onleihe_kategorien["Bestellpreis"].max()
@@ -666,8 +703,9 @@ def _(alt, onleihe_kategorien, onleihe_vergleichswert, pd):
                 ),
                 axis=alt.Axis(format="~s"),
             ),
-            y=alt.Y("Kategorie:N", title="Kategorie"),
+            y=alt.Y("Kategorie:N", title="Kategorie").axis(None),
             color=alt.value("#1f77b4"),
+            tooltip=[alt.Tooltip("Value", title="Budget €", format=".2r")],
         )
     )
 
@@ -679,22 +717,36 @@ def _(alt, onleihe_kategorien, onleihe_vergleichswert, pd):
         .encode(
             x=alt.X(
                 "Value:Q",
-                title=onleihe_vergleichswert.value,
+                title=onleihe_vergleichswert.selected_key,
                 scale=alt.Scale(domain=[0, onleihe_umschlag_max], nice=False),
                 axis=alt.Axis(format=".2f"),
             ),
-            y=alt.Y("Kategorie:N", title=None),
+            y=alt.Y("Kategorie:N", title=None).axis(None),
             color=alt.value("#ff7f0e"),
+            tooltip=[
+                alt.Tooltip("Value", title=onleihe_vergleichswert.selected_key)
+            ],
         )
+    )
+
+    onleihe_middle = (
+        alt.Chart(onleihe_chart_data)
+        .encode(
+            alt.Y("Kategorie:N").axis(None),
+            alt.Text("Kategorie:N"),
+        )
+        .mark_text()
+        .properties(width=130, height=400)
     )
 
     # Combine the charts
     onleihe_combined_chart = alt.hconcat(
         onleihe_bestellpreis_chart.properties(
-            title="Bestellpreis", width=300, height=400
+            title="Budget", width=300, height=400
         ),
+        onleihe_middle,
         onleihe_umschlag_chart.properties(
-            title=onleihe_vergleichswert.value, width=300, height=400
+            title=onleihe_vergleichswert.selected_key, width=300, height=400
         ),
     ).properties(
         title={
@@ -709,6 +761,7 @@ def _(alt, onleihe_kategorien, onleihe_vergleichswert, pd):
         onleihe_bestellpreis_max,
         onleihe_chart_data,
         onleihe_combined_chart,
+        onleihe_middle,
         onleihe_umschlag_chart,
         onleihe_umschlag_max,
     )
@@ -718,7 +771,7 @@ def _(alt, onleihe_kategorien, onleihe_vergleichswert, pd):
 def _(mo):
     mo.md(
         r"""
-        # Bestleiher
+        # Medien in Onleihe & physisch
 
         In dieser Auswertung kann die Anzahl der ausleihstärksten Medien analysiert werden, die __sowohl in der Onleihe als auch im physischen Bestand__ zu finden sind. Exemplare, Entleihungen und eingesetztes Budget werden analysiert.
 
@@ -731,10 +784,10 @@ def _(mo):
 @app.cell
 def _(mo):
     anzahl_bestleiher = mo.ui.slider(
-        10,
-        200,
-        10,
-        value=10,
+        50,
+        2000,
+        50,
+        value=1000,
         label="Anzahl der ausgewerteten online und offline verfügbaren Bestleiher auswählen",
         show_value=True,
     )
@@ -747,7 +800,7 @@ def _(mo):
 def _(anzahl_bestleiher, gesamtdaten, onleihe, pd):
     # Create a proper copy of the merged DataFrame first
     comparison_df = pd.merge(
-        gesamtdaten.groupby("Titel").sum(),
+        gesamtdaten[gesamtdaten["Systematik"] != 200],
         onleihe[onleihe["Format"] != "eAudio"],
         on="Titel",
         suffixes=("_gesamtdaten", "_onleihe"),
@@ -755,7 +808,7 @@ def _(anzahl_bestleiher, gesamtdaten, onleihe, pd):
 
     comparison_df.rename(
         columns={
-            "Gesamt": "Loans_gesamtdaten",
+            "Gesamt": "Loans_gesamtdaten",  # vorher Gesamt
             "Ausleihen gesamt": "Loans_onleihe",
             "exemplare": "Copies_gesamtdaten",
             "Bestand 2024": "Copies_onleihe",
@@ -777,8 +830,6 @@ def _(anzahl_bestleiher, gesamtdaten, onleihe, pd):
         comparison_df["Loans_onleihe"] + comparison_df["Loans_gesamtdaten"]
     )
     comparison_df = comparison_df.nlargest(anzahl_bestleiher.value, "Loans Sum")
-
-    # Then proceed with your scatter plot code...
     return (comparison_df,)
 
 
@@ -992,7 +1043,9 @@ def _(alt, comparison_df):
     )
 
     # Combine the plots side by side
-    scatter_combined_plot = alt.hconcat(physical_plot, ebook_plot).resolve_scale(
+    scatter_combined_plot = alt.hconcat(
+        physical_plot.interactive(), ebook_plot.interactive()
+    ).resolve_scale(
         color="independent",
         size="shared",  # Ensure uniform scaling of size between the two plots
     )
@@ -1013,15 +1066,15 @@ def _(alt, comparison_df):
 def _(comparison_df, pd):
     # Aggregate sum for physical books
     physical_summary = {
-        "Ausleihen gesamt": comparison_df["Loans_gesamtdaten"].sum(),
-        "Exemplare gesamt": comparison_df["Copies_gesamtdaten"].sum(),
+        "Ausleihen 2023/24": comparison_df["Loans_gesamtdaten"].sum(),
+        "Exemplare": comparison_df["Copies_gesamtdaten"].sum(),
         "Gesamtpreis": comparison_df["Price_gesamtdaten"].sum(),
     }
 
     # Aggregate sum for e-books
     ebook_summary = {
-        "Ausleihen gesamt": comparison_df["Loans_onleihe"].sum(),
-        "Exemplare gesamt": comparison_df["Copies_onleihe"].sum(),
+        "Ausleihen 2023/24": comparison_df["Loans_onleihe"].sum(),
+        "Exemplare": comparison_df["Copies_onleihe"].sum(),
         "Gesamtpreis": comparison_df["Price_onleihe"].sum(),
     }
     # Create a DataFrame for the summary
@@ -1038,31 +1091,15 @@ def _(comparison_df, pd):
         .replace(".", ",")
         .replace("X", ".")
     )
-    summary_table["Ausleihen gesamt"] = summary_table["Ausleihen gesamt"].apply(
+    summary_table["Ausleihen 2023/24"] = summary_table["Ausleihen 2023/24"].apply(
         lambda x: f"{x:,.0f}".replace(",", ".")
     )
-    summary_table["Exemplare gesamt"] = summary_table["Exemplare gesamt"].apply(
+    summary_table["Exemplare"] = summary_table["Exemplare"].apply(
         lambda x: f"{x:,.0f}".replace(",", ".")
     )
 
     summary_table
     return ebook_summary, physical_summary, summary_table
-
-
-@app.cell
-def _(mo):
-    mo.md(
-        r"""
-        Todo
-
-        Bestellpreis beim ersten Vergleichsdiagramm ändern in Gesamtkosten
-        kann die Budget- vs. Leistungsgrafik nach Standorten aufgeschlüsselt werden?
-        können wir uns die fremdsprachige Literatur noch einmal vergegenwärtigen?
-        Tooltips für die oberen Diagramme
-        Farben der oberen Diagramme anders als Gesamtstatistik vergeben
-        """
-    )
-    return
 
 
 if __name__ == "__main__":
