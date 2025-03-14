@@ -103,6 +103,19 @@ def _(mo, pd):
 
 @app.cell
 def _(mo):
+    mo.md(
+        """
+        # Statistiken zur Bestandskonferenz 2025
+        ## Vorbemerkung
+
+        In dieses Dashboard wurden nur statistische Vergleiche aufgenommen, die statistisch hochsignifikant und robust sind. Dazu wurden statistische Korrekturen in die Daten eingerechnet, etwa um den unterschiedlichen Leihfristen in Onleihe und im physischen Bestand gerecht zu werden. Bei jeder Analyse ist im Einzelnen aufgeführt, woher die Zahlen kommen, wie berechnet wurde und welche Korrekturen vorgenommen wurden. Ihre Fragen zum Dashboard beantworten Sebastian Wallwitz, Anett Helbig & André Wendler.
+        """
+    )
+    return
+
+
+@app.cell
+def _(mo):
     mo.md("""# Entwicklung allgemeiner Leistungszahlen""")
     return
 
@@ -197,9 +210,6 @@ def _(df, mo):
             ),
             mo.vstack([zeitfilter, auflösung], justify="start"),
             mo.hstack([trendlinie, z_scores], justify="start"),
-            mo.md(
-                "Standardisierte Werte bedeutet, dass im Diagramm nicht die absoluten Werte, sondern die Abweichungen vom Durchschnitt angegeben werden. Dadurch lässt sich die Performance von Bibliotheken und Online-Diensetn. Z-Score über 0 bedeutet: überdurchschnittliches Wachstum, 0 = durchschnittliches Wachstum, unter 0 = Wachstum unter dem Durchschnitt (Rückgang)"
-            ),
         ]
     )
     return (
@@ -368,18 +378,60 @@ def _(
 
 
 @app.cell
+def _(mo):
+    mo.md(
+        r"""
+        __Standardisierte Werte:: bedeutet, dass im Diagramm nicht die absoluten Werte, sondern die Abweichungen vom Durchschnitt des gesamten Vergleichszeitraums angegeben werden. Dadurch lässt sich die Performance von Bibliotheken und Online-Diensten direkt vergleichen ungeachtet der absoluten Werte.
+
+        Z-Score über 0 bedeutet: überdurchschnittliches Wachstum, 0 = durchschnittliches Wachstum, unter 0 = Wachstum unter dem Durchschnitt (Rückgang). Ein Z-Score von -0,5 entspricht ungefähr dem 31. Perzentil. Das bedeutet, dass etwa 31 % der Daten in der Verteilung unter diesem Wert liegen und 69 % darüber. Werte über oder unter einem Z-Score von +/- 1 sind bereits sehr deutliche Abweichungen, bei denen nur noch 16 % der Werte noch weiter außerhalb der Verteilung liegen.
+        """
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""Die Zahlen visualisieren unsere bekannten Monatsstatistiken hier nur neu.""")
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+        # Budget & Leistung physischer Bestand
+
+        Die Frage hinter den folgenden beiden Grafiken lautete: stimmt das Verhältnis zwischen Input & Output, d. h. investieren wir den Erwerbungsetat so, dass die Investition die Leipziger Bürgerschaft optimal erreicht. Als Grundlage dienten die Erwerbungsdaten aus 2023 und 2024. Diese Daten wurden mit den Entleihdaten aus den beiden Jahren verschnitten. Man kann so die 10 Systematiken, in die wir das meiste Geld investieren, ihren Leistungszahlen gegenüberstellen.
+
+        Idealerweise sollte das Bestandssegment mit dem höchsten Investment auch die besten Leistungszahlen erbringen.
+
+        Es sind hier immer die Budget- und Leistungszahlen von 2023 & 2024 gemeinsam verwendet, um Sondereffekte eines der beiden Jahre statistisch zu glätten. Die Zahlen sind als Kennzahlen und nicht als reale Zahlen zu betrachten, weil hier nur solche Titel berücksichtigt werden, für die 2023 oder 2024 Exemplare beschafft wurden. Bei den Entleihungen werden aber auch in Vorjahren beschaffte Exemplare berücksichtigt, nicht allerdings beim Budget. Deshalb entsprechen die Umschlagszahlen nur im Verhältnis zueinander aber nicht absolut denjenigen aus der Monatsstatistik.
+        """
+    )
+    return
+
+
+@app.cell
 def _(mo, pd):
     jahre = ["2023", "2024"]
 
     try:
-        buchdaten = pd.concat(
-            [
-                pd.read_csv(
-                    mo.notebook_location() / "public" / f"buchdaten_{jahr}.csv",
-                    low_memory=False,
-                )
-                for jahr in jahre
-            ]
+        buchdaten = pd.read_csv(
+            mo.notebook_location() / "public" / "buchdaten_gesamt_reduce.csv",
+            usecols=[
+                "Zweigstelle",
+                "Abteilung",
+                "Geistiger Schöpfer",
+                "Gesamt",
+                "2024",
+                "2023",
+                "Titel",
+                "Mediennummer",
+                "Erscheinungsjahr",
+                "Systematik",
+                "katkey",
+            ],
+            low_memory=False,
         )
 
         bestelldaten = pd.concat(
@@ -397,14 +449,22 @@ def _(mo, pd):
         )
 
     except:
-        buchdaten = pd.concat(
-            [
-                pd.read_csv(
-                    f"https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/buchdaten_{jahr}.csv",
-                    low_memory=False,
-                )
-                for jahr in jahre
-            ]
+        buchdaten = pd.read_csv(
+            "https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/buchdaten_gesamt_reduce.csv",
+            usecols=[
+                "Zweigstelle",
+                "Abteilung",
+                "Geistiger Schöpfer",
+                "Gesamt",
+                "2024",
+                "2023",
+                "Titel",
+                "Mediennummer",
+                "Erscheinungsjahr",
+                "Systematik",
+                "katkey",
+            ],
+            low_memory=False,
         )
 
         bestelldaten = pd.concat(
@@ -431,15 +491,10 @@ def _(mo, pd):
     buchdaten_grouped = buchdaten.groupby("katkey", as_index=False).agg(
         {
             "Geistiger Schöpfer": "first",
-            "Schlagwort": "first",
-            "Signatur": "first",
-            "2. Signatur": "first",
             "Gesamt": "sum",
             "2023_2024": "sum",
             "Titel": "first",
-            "datumaufn": "first",
             "Mediennummer": "first",
-            "Verlag": "first",
             "Erscheinungsjahr": "first",
             "Systematik": "first",
             "exemplare": "first",
@@ -455,7 +510,6 @@ def _(mo, pd):
         buchdaten_grouped, bestelldaten_grouped, on="katkey", how="left"
     )
     gesamtdaten = gesamtdaten[gesamtdaten["katkey"] != 1952225]
-    gesamtdaten = gesamtdaten[gesamtdaten["Systematik"] != 200]
     gesamtdaten.dropna(subset=["Bestellpreis"], inplace=True)
     return (
         bestelldaten,
@@ -478,18 +532,12 @@ def _(gesamtdaten):
         }
     )
     umsatz_systematik["Umschlag"] = (
-        umsatz_systematik["2023_2024"] / umsatz_systematik["exemplare"]
+        umsatz_systematik["2023_2024"] / umsatz_systematik["exemplare"] / 2
     )
     umsatz_systematik["Preis pro Entleihung"] = (
         umsatz_systematik["Bestellpreis"] / umsatz_systematik["2023_2024"]
     )
     return (umsatz_systematik,)
-
-
-@app.cell
-def _(mo):
-    mo.md(r"""# Budget & Leistung physischer Bestand""")
-    return
 
 
 @app.cell
@@ -504,7 +552,14 @@ def _(mo):
         },
         value="Umschlag",
     )
-    vergleichswert
+    mo.vstack(
+        [
+            mo.md(
+                "__Wählen Sie einen Wert, der dem Budget gegenübergestellt werden soll.__"
+            ),
+            vergleichswert,
+        ]
+    )
     return (vergleichswert,)
 
 
@@ -592,7 +647,7 @@ def _(alt, pd, umsatz_systematik, vergleichswert):
         ),
     ).properties(
         title={
-            "text": "Top 10 Systematiken: Bestellpreis vs Umschlag",
+            "text": f"Top 10 Systematiken: Budget & {vergleichswert.selected_key}",
             "fontSize": 16,
         }
     )
@@ -614,7 +669,13 @@ def _(alt, pd, umsatz_systematik, vergleichswert):
 
 @app.cell
 def _(mo):
-    mo.md(r"""# Budget & Leistung Onleihe""")
+    mo.md(
+        r"""
+        # Budget & Leistung Onleihe
+
+        Die Zahlen für den Umschlag wurden so korrigiert, als ob in der Onleihe auch eine Ausleihfrist von 4 Wochen bestünde.
+        """
+    )
     return
 
 
@@ -665,7 +726,14 @@ def _(mo):
         },
         value="Umschlag 2023/2024",
     )
-    onleihe_vergleichswert
+    mo.vstack(
+        [
+            mo.md(
+                "__Wählen Sie einen Wert, der dem Budget gegenübergestellt werden soll.__"
+            ),
+            onleihe_vergleichswert,
+        ]
+    )
     return (onleihe_vergleichswert,)
 
 
@@ -769,11 +837,20 @@ def _(alt, onleihe_kategorien, onleihe_vergleichswert, pd):
 def _(mo):
     mo.md(
         r"""
-        # Medien in Onleihe & physisch
+        # Direktvergleich Onleihe & physisch
+
+        __Frage: wie schneiden Medien im direkten Vergleich ab, wenn Sie sowohl online als auch offline verfügbar sind?__
+
 
         In dieser Auswertung kann die Anzahl der ausleihstärksten Medien analysiert werden, die __sowohl in der Onleihe als auch im physischen Bestand__ zu finden sind. Exemplare, Entleihungen und eingesetztes Budget werden analysiert.
 
-        Es werden die Top x Medien ausgewertet, die sowohl online als auch offline verfügbar sind.
+        Es werden die Top x Titel ausgewertet, die sowohl online als auch offline verfügbar sind.
+
+        Die Zahl der Exemplare in der Onleihe wurde korrigiert, um nachgekaufte Lizenzen mitzubedenken. Außerdem wurde die Umschlagszahl der Onleihe so korrigiert, als wären die Medien dort auch für 4 Wochen entleihbar.
+
+        Im Gegensatz zur Budgervergleichsanalyse oben wurden hier die Kosten des Bestandes auch auf die Exemplare hochgerechnet, die vor 2023 angeschafft wurden, um auch diese Longrunner mit den nicht verschleißenden Lizenzen in der Onleihe besser vergleichen zu können.
+
+        Hörbücher wurden aus beiden Beständen herausgerechnet, weil sie die Vergleichbarkeit pro Titel erschwert hätten.
         """
     )
     return
@@ -783,7 +860,7 @@ def _(mo):
 def _(mo):
     anzahl_bestleiher = mo.ui.slider(
         50,
-        2000,
+        3200,
         50,
         value=1000,
         label="Anzahl der ausgewerteten online und offline verfügbaren Bestleiher auswählen",
@@ -828,7 +905,22 @@ def _(anzahl_bestleiher, gesamtdaten, onleihe, pd):
         comparison_df["Loans_onleihe"] + comparison_df["Loans_gesamtdaten"]
     )
     comparison_df = comparison_df.nlargest(anzahl_bestleiher.value, "Loans Sum")
-    return (comparison_df,)
+
+    # korrektur des eingesetzten preises, der auch auf altexemplare hochgerechnet wird, die vor 2023 beschafft wurden
+    mask = (comparison_df["Copies_gesamtdaten"] > comparison_df["EXEMPLARANZ"]) & (
+        comparison_df["Price_gesamtdaten"] != 0
+    )
+
+    # Anwenden der Berechnung nur auf Zeilen, die die Bedingung erfüllen
+    comparison_df.loc[mask, "Price_gesamtdaten"] = comparison_df.loc[
+        mask, "Copies_gesamtdaten"
+    ] * (
+        comparison_df.loc[mask, "Price_gesamtdaten"]
+        / comparison_df.loc[mask, "EXEMPLARANZ"]
+    )
+
+    comparison_df = comparison_df[comparison_df["Systematik"] != 200]
+    return comparison_df, mask
 
 
 @app.cell
@@ -928,9 +1020,18 @@ def _(mo):
 
 
 @app.cell
+def _(comparison_df):
+    # Korrektur der Exemplarzahlen in der Onleihe um Lizenzverlängerungen abzubilden
+
+    comparison_df["Copies_onleihe"] = comparison_df["Copies_onleihe"] * 1.2
+    return
+
+
+@app.cell
 def _(alt, comparison_df):
     # Calculate the min and max values for the x and y axes across both datasets
     # min_x = min(comparison_df["Copies_gesamtdaten"].min(), comparison_df["Copies_onleihe"].min())
+
     min_x = 0
     max_x = max(
         comparison_df["Copies_gesamtdaten"].max(),
@@ -988,8 +1089,8 @@ def _(alt, comparison_df):
             ],
         )
         .properties(
-            width=500,
-            height=500,
+            width=400,
+            height=400,
             title="Physische Bücher: Exemplare, Entleihungen & Preise",
         )
     )
@@ -1034,8 +1135,8 @@ def _(alt, comparison_df):
             ],
         )
         .properties(
-            width=500,
-            height=500,
+            width=400,
+            height=400,
             title="E-Books: Exemplare, Entleihungen & Preise",
         )
     )
@@ -1061,6 +1162,14 @@ def _(alt, comparison_df):
 
 
 @app.cell
+def _(anzahl_bestleiher, mo):
+    mo.md(f"""
+    ## Zusammenfassung der {anzahl_bestleiher.value} Medien aus physischem Bestand und Onleihe
+          """)
+    return
+
+
+@app.cell
 def _(comparison_df, pd):
     # Aggregate sum for physical books
     physical_summary = {
@@ -1075,17 +1184,31 @@ def _(comparison_df, pd):
         "Exemplare": comparison_df["Copies_onleihe"].sum(),
         "Gesamtpreis": comparison_df["Price_onleihe"].sum(),
     }
+
     # Create a DataFrame for the summary
     summary_table = pd.DataFrame(
-        {"Physische Bücher": physical_summary, "E-Books": ebook_summary}
+        {"Physischer Bestand": physical_summary, "E-Books": ebook_summary}
     )
 
     # Transpose the table for better readability
     summary_table = summary_table.T
 
+    # Berechne Umschlag (Ausleihen / Exemplare)
+    summary_table["Umschlag"] = (
+        summary_table["Ausleihen 2023/24"] / summary_table["Exemplare"]
+    )
+
+    # Manuelle Anpassung des Umschlagwerts für E-Books - Multiplikation mit 0,75
+    summary_table.loc["E-Books", "Umschlag"] *= 0.75
+
+    # Berechne Preis pro Entleihung (Gesamtpreis / Ausleihen)
+    summary_table["Preis pro Entleihung"] = (
+        summary_table["Gesamtpreis"] / summary_table["Ausleihen 2023/24"]
+    )
+
     # Format the numbers for German conventions
     summary_table["Gesamtpreis"] = summary_table["Gesamtpreis"].apply(
-        lambda x: f"€{x:,.2f}".replace(",", "X")
+        lambda x: f"€ {x:,.0f}".replace(",", "X")
         .replace(".", ",")
         .replace("X", ".")
     )
@@ -1095,6 +1218,14 @@ def _(comparison_df, pd):
     summary_table["Exemplare"] = summary_table["Exemplare"].apply(
         lambda x: f"{x:,.0f}".replace(",", ".")
     )
+
+    # Formatiere die neuen Kennzahlen mit deutschen Zahlenkonventionen
+    summary_table["Umschlag"] = summary_table["Umschlag"].apply(
+        lambda x: f"{x:.2f}".replace(".", ",")
+    )
+    summary_table["Preis pro Entleihung"] = summary_table[
+        "Preis pro Entleihung"
+    ].apply(lambda x: f"€ {x:.2f}".replace(".", ","))
 
     summary_table
     return ebook_summary, physical_summary, summary_table
