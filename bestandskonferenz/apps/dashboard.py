@@ -400,9 +400,7 @@ def _(mo, pd):
         buchdaten = pd.concat(
             [
                 pd.read_csv(
-                    mo.notebook_location()
-                    / "public"
-                    / f"https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/buchdaten_{jahr}.csv",
+                    f"https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/buchdaten_{jahr}.csv",
                     low_memory=False,
                 )
                 for jahr in jahre
