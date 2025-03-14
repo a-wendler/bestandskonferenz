@@ -108,7 +108,7 @@ def _(mo):
         # Statistiken zur Bestandskonferenz 2025
         ## Vorbemerkung
 
-        In dieses Dashboard wurden nur statistische Vergleiche aufgenommen, die statistisch hochsignifikant und robust sind. Dazu wurden statistische Korrekturen in die Daten eingerechnet, etwa um den unterschiedlichen Leihfristen in Onleihe und im physischen Bestand gerecht zu werden. Bei jeder Analyse ist im Einzelnen aufgeführt, woher die Zahlen kommen, wie berechnet wurde und welche Korrekturen vorgenommen wurden. Ihre Fragen zum Dashboard beantworten Sebastian Wallwitz, Anett Helbig & André Wendler.
+        In dieses Dashboard wurden nur statistische Vergleiche aufgenommen, die statistisch hochsignifikant und robust sind. Dazu wurden statistische Korrekturen in die Daten eingerechnet, etwa um den unterschiedlichen Leihfristen in Onleihe und im physischen Bestand gerecht zu werden. Bei jeder Analyse ist im Einzelnen aufgeführt, woher die Zahlen kommen, wie berechnet wurde und welche Korrekturen vorgenommen wurden. Ihre Fragen zum Dashboard beantworten Sebastian Wallwitz, Annett Helbig & André Wendler.
         """
     )
     return
