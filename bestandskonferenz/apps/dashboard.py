@@ -53,6 +53,85 @@ def _(mo, pd):
 
 
 @app.cell
+def _():
+    systematik_descriptions = {
+        79: "ePaper (Genios)",
+        80: "eBook (Onleihe)",
+        81: "eAudio (Onleihe)",
+        82: "eVideo (Onleihe)",
+        83: "eMusic (Onleihe)",
+        84: "ePaper (Onleihe)",
+        85: "eMagazin (Onleihe)",
+        86: "eVideo (Filmfriend)",
+        87: "eAudio (Overdrive)",
+        88: "eVideo (Overdrive)",
+        89: "eBook (Overdrive)",
+        100: "Belletristik Erw",
+        110: "Belletristik Jugend",
+        120: "Belletristik REG",
+        130: "Belletristik Kinder",
+        140: "Belletristik Musik",
+        200: "CD Belletristik",
+        210: "CD KAB",
+        220: "CD Kinder",
+        230: "CD Jugend",
+        240: "CD Musik",
+        300: "CD-Rom Belletristik",
+        310: "CD-Rom KAB",
+        320: "CD-Rom Jugend",
+        330: "CD-Rom Kinder",
+        340: "CD-Rom Musik",
+        400: "DVD Belletristik",
+        410: "DVD KAB",
+        420: "DVD Jugend",
+        430: "DVD Kinder",
+        440: "DVD Musik",
+        500: "eMedium Erwachsene",
+        510: "eMedium Kinder",
+        520: "eMedium Jugend",
+        540: "eMedium Musik",
+        600: "Fachliteratur Erwachsene",
+        610: "Fachliteratur Jugend",
+        620: "Fachliteratur Musik",
+        630: "Fachliteratur Kinder",
+        640: "Fachlit Erwachsene Demokratie",
+        800: "Medienkombination Belletristik Erw.",
+        810: "Medienkombination KAB",
+        820: "Medienkombination Musik",
+        830: "Medienkombination REG",
+        840: "Medienkombination Kinder",
+        900: "Noten",
+        1000: "Spiele",
+        1100: "Videokassette",
+        1200: "Zeitschriften Erwachsene",
+        1210: "Zeitschriften Jugend",
+        1220: "Zeitschriften Kinder",
+        1230: "Zeitschriften Musik",
+        1300: "Dias",
+        1400: "Film",
+        1500: "Grafik (Artothek)",
+        1600: "Schallplatte",
+        1700: "Verschiedenes (außer Kibi + Mubi)",
+        1710: "Verschiedenes Mubi",
+        1720: "Verschiedenes Kibi",
+        1730: "Verschiedenes Gegenstand (BdD)",
+        1800: "TonbandKassette",
+        2000: "Online-Dokument",
+        9001: "Summe I (Belletristik)",
+        9002: "Summe II (Kinderliteratur)",
+        9003: "Summe III (Fachliteratur)",
+        9005: "Summe V (Zeitschriften)",
+        9010: "Summe IV CD",
+        9011: "Summe IV CDRom",
+        9012: "Summe IV DVD",
+        9013: "Summe IV MedienKomb",
+        9014: "Summe IV eMedien",
+        9015: "Summe Verschiedenes",
+    }
+    return (systematik_descriptions,)
+
+
+@app.cell
 def _(mo, pd):
     files = [
         "2017-absolut.csv",
@@ -165,11 +244,11 @@ def _(df, mo):
 
     dimension = mo.ui.dropdown(
         options=[
-            "Besucher",
             "Entleihungen",
+            "Besucher",
         ],
         label="Auswertungsdimension",
-        value="Besucher",
+        value="Entleihungen",
     )
     bibliotheks_auswahl = mo.ui.multiselect(
         options=bibliotheken,
@@ -381,7 +460,7 @@ def _(
 def _(mo):
     mo.md(
         r"""
-        __Standardisierte Werte:: bedeutet, dass im Diagramm nicht die absoluten Werte, sondern die Abweichungen vom Durchschnitt des gesamten Vergleichszeitraums angegeben werden. Dadurch lässt sich die Performance von Bibliotheken und Online-Diensten direkt vergleichen ungeachtet der absoluten Werte.
+        __Standardisierte Werte__ bedeutet, dass im Diagramm nicht die absoluten Werte, sondern die Abweichungen vom Durchschnitt des gesamten Vergleichszeitraums angegeben werden. Dadurch lässt sich die Performance von Bibliotheken und Online-Diensten direkt vergleichen ungeachtet der absoluten Werte.
 
         Z-Score über 0 bedeutet: überdurchschnittliches Wachstum, 0 = durchschnittliches Wachstum, unter 0 = Wachstum unter dem Durchschnitt (Rückgang). Ein Z-Score von -0,5 entspricht ungefähr dem 31. Perzentil. Das bedeutet, dass etwa 31 % der Daten in der Verteilung unter diesem Wert liegen und 69 % darüber. Werte über oder unter einem Z-Score von +/- 1 sind bereits sehr deutliche Abweichungen, bei denen nur noch 16 % der Werte noch weiter außerhalb der Verteilung liegen.
         """
@@ -564,7 +643,7 @@ def _(mo):
 
 
 @app.cell
-def _(alt, pd, umsatz_systematik, vergleichswert):
+def _(alt, pd, systematik_descriptions, umsatz_systematik, vergleichswert):
     # Get top 10 by Bestellpreis
     top_10 = umsatz_systematik.sort_values("Bestellpreis", ascending=False).head(
         10
@@ -586,6 +665,12 @@ def _(alt, pd, umsatz_systematik, vergleichswert):
 
     # Create a list of Systematik values sorted by Bestellpreis
     sort_order = top_10_reset["Systematik"].tolist()
+
+    # Create a DataFrame for the middle chart with codes and descriptions
+    middle_data = pd.DataFrame({
+        'Systematik': sort_order,
+        'Label': [f"{code} - {systematik_descriptions.get(code, 'Unbekannt')}" for code in sort_order]
+    })
 
     # Create separate charts for each metric with appropriate domains
     bestellpreis_chart = (
@@ -619,7 +704,7 @@ def _(alt, pd, umsatz_systematik, vergleichswert):
                 axis=alt.Axis(format=".2r"),
             ),
             y=alt.Y("Systematik:N", title=None, sort=sort_order).axis(None),
-            color=alt.value("#ff7f0e"),
+            color=alt.value("#269e58"),
             tooltip=[
                 alt.Tooltip(
                     "Value", title=f"{vergleichswert.selected_key}", format=".2f"
@@ -629,13 +714,13 @@ def _(alt, pd, umsatz_systematik, vergleichswert):
     )
 
     middle = (
-        alt.Chart(chart_data)
+        alt.Chart(middle_data)
         .encode(
             alt.Y("Systematik:N", sort=sort_order).axis(None),
-            alt.Text("Systematik:Q"),
+            alt.Text("Label:N"),
         )
-        .mark_text()
-        .properties(width=20, height=400)
+        .mark_text(align='center')
+        .properties(width=200, height=400)  # Increased width to accommodate longer text
     )
 
     # Combine the charts
@@ -659,6 +744,7 @@ def _(alt, pd, umsatz_systematik, vergleichswert):
         chart_data,
         combined_chart,
         middle,
+        middle_data,
         sort_order,
         top_10,
         top_10_reset,
@@ -788,7 +874,7 @@ def _(alt, onleihe_kategorien, onleihe_vergleichswert, pd):
                 axis=alt.Axis(format=".2f"),
             ),
             y=alt.Y("Kategorie:N", title=None).axis(None),
-            color=alt.value("#ff7f0e"),
+            color=alt.value("#269e58"),
             tooltip=[
                 alt.Tooltip("Value", title=onleihe_vergleichswert.selected_key)
             ],
@@ -848,7 +934,7 @@ def _(mo):
 
         Die Zahl der Exemplare in der Onleihe wurde korrigiert, um nachgekaufte Lizenzen mitzubedenken. Außerdem wurde die Umschlagszahl der Onleihe so korrigiert, als wären die Medien dort auch für 4 Wochen entleihbar.
 
-        Im Gegensatz zur Budgervergleichsanalyse oben wurden hier die Kosten des Bestandes auch auf die Exemplare hochgerechnet, die vor 2023 angeschafft wurden, um auch diese Longrunner mit den nicht verschleißenden Lizenzen in der Onleihe besser vergleichen zu können.
+        Im Gegensatz zur Budgetvergleichsanalyse oben wurden hier die Kosten des Bestandes auch auf die Exemplare hochgerechnet, die vor 2023 angeschafft wurden, um auch diese Longrunner mit den nicht verschleißenden Lizenzen in der Onleihe besser vergleichen zu können.
 
         Hörbücher wurden aus beiden Beständen herausgerechnet, weil sie die Vergleichbarkeit pro Titel erschwert hätten.
         """
@@ -1005,7 +1091,7 @@ def _(alt, comparison_df, pd):
 def _(mo):
     mo.md(
         """
-        Im folgende Diagram werden dieselben top x Titel wie oben getrennt nach physischem Bestand und Onleihe dargestellt.
+        Im folgenden Diagramm werden dieselben top x Titel wie oben getrennt nach physischem Bestand und Onleihe dargestellt.
 
         Auf der __x-Achse__ ist die Anzahl der __Exemplare__ im Bestand im jeweiligen Format zu sehen.
 
