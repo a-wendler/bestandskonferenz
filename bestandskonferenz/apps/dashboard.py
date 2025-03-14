@@ -410,7 +410,7 @@ def _(mo, pd):
         bestelldaten = pd.concat(
             [
                 pd.read_csv(
-                    f"https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/buchdaten_{jahr}.csv",
+                    f"https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/bestelldaten_{jahr}.csv",
                     sep=";",
                     encoding="latin_1",
                     decimal=",",
