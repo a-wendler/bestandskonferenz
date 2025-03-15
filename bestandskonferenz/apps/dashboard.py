@@ -10,174 +10,106 @@ def _():
     import pandas as pd
     import altair as alt
     import numpy as np
-    from dateutil import relativedelta
-    return alt, mo, np, pd, relativedelta
+
+
+    # Helper function for loading files with fallback to GitHub
+    def load_file(file_path, is_remote=False, **kwargs):
+        """
+        Load a file with fallback to GitHub repository.
+
+        Args:
+            file_path: Local path or file name
+            is_remote: If True, directly use GitHub URL
+            **kwargs: Arguments to pass to pd.read_csv
+
+        Returns:
+            DataFrame with loaded data
+        """
+        try:
+            if is_remote:
+                return pd.read_csv(
+                    f"https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/{file_path}",
+                    **kwargs,
+                )
+            else:
+                return pd.read_csv(
+                    mo.notebook_location() / "public" / file_path, **kwargs
+                )
+        except Exception as e:
+            print(f"Error loading {file_path}: {e}")
+            # Fallback to GitHub if local loading fails
+            if not is_remote:
+                return pd.read_csv(
+                    f"https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/{file_path}",
+                    **kwargs,
+                )
+            else:
+                raise
+    return alt, load_file, mo, np, pd
 
 
 @app.cell
-def _(mo, pd):
-    def _():
-        files = [
-            "2017-kummulativ.csv",
-            "2018-kummulativ.csv",
-            "2019-kummulativ.csv",
-            "2020-kummulativ.csv",
-            "2021-kummulativ.csv",
-            "2022-kummulativ.csv",
-            "2023-kummulativ.csv",
-            "2024-kummulativ.csv",
-        ]
-
-        for file in files:
-            # with urllib.request.urlopen(
-            with open(
-                mo.notebook_location() / "public" / file,
-                mode="r",
-                encoding="utf-8",
-            ) as f:
-                df = pd.read_csv(
-                    f,
-                    parse_dates=["Zeitraum"],
-                )
-
-            # Calculate absolute values per library
-            cols = ["Entleihungen", "Besucher", "aktivierte Ausweise"]
-            df[cols] = df.groupby("Bibliothek")[cols].diff().fillna(df[cols])
-
-            # Format output and save
-            df["Zeitraum"] = df["Zeitraum"].dt.strftime("%Y-%m")
-            df.sort_values(["Zeitraum", "Bibliothek"]).to_csv(
-                f"{file[:4]}-absolut.csv", index=False, encoding="utf-8"
-            )
-    return
-
-
-@app.cell(hide_code=True)
 def _():
-    systematik_descriptions = {
-        79: "ePaper (Genios)",
-        80: "eBook (Onleihe)",
-        81: "eAudio (Onleihe)",
-        82: "eVideo (Onleihe)",
-        83: "eMusic (Onleihe)",
-        84: "ePaper (Onleihe)",
-        85: "eMagazin (Onleihe)",
-        86: "eVideo (Filmfriend)",
-        87: "eAudio (Overdrive)",
-        88: "eVideo (Overdrive)",
-        89: "eBook (Overdrive)",
-        100: "Belletristik Erw",
-        110: "Belletristik Jugend",
-        120: "Belletristik REG",
-        130: "Belletristik Kinder",
-        140: "Belletristik Musik",
-        200: "CD Belletristik",
-        210: "CD KAB",
-        220: "CD Kinder",
-        230: "CD Jugend",
-        240: "CD Musik",
-        300: "CD-Rom Belletristik",
-        310: "CD-Rom KAB",
-        320: "CD-Rom Jugend",
-        330: "CD-Rom Kinder",
-        340: "CD-Rom Musik",
-        400: "DVD Belletristik",
-        410: "DVD KAB",
-        420: "DVD Jugend",
-        430: "DVD Kinder",
-        440: "DVD Musik",
-        500: "eMedium Erwachsene",
-        510: "eMedium Kinder",
-        520: "eMedium Jugend",
-        540: "eMedium Musik",
-        600: "Fachliteratur Erwachsene",
-        610: "Fachliteratur Jugend",
-        620: "Fachliteratur Musik",
-        630: "Fachliteratur Kinder",
-        640: "Fachlit Erwachsene Demokratie",
-        800: "Medienkombination Belletristik Erw.",
-        810: "Medienkombination KAB",
-        820: "Medienkombination Musik",
-        830: "Medienkombination REG",
-        840: "Medienkombination Kinder",
-        900: "Noten",
-        1000: "Spiele",
-        1100: "Videokassette",
-        1200: "Zeitschriften Erwachsene",
-        1210: "Zeitschriften Jugend",
-        1220: "Zeitschriften Kinder",
-        1230: "Zeitschriften Musik",
-        1300: "Dias",
-        1400: "Film",
-        1500: "Grafik (Artothek)",
-        1600: "Schallplatte",
-        1700: "Verschiedenes (außer Kibi + Mubi)",
-        1710: "Verschiedenes Mubi",
-        1720: "Verschiedenes Kibi",
-        1730: "Verschiedenes Gegenstand (BdD)",
-        1800: "TonbandKassette",
-        2000: "Online-Dokument",
-        9001: "Summe I (Belletristik)",
-        9002: "Summe II (Kinderliteratur)",
-        9003: "Summe III (Fachliteratur)",
-        9005: "Summe V (Zeitschriften)",
-        9010: "Summe IV CD",
-        9011: "Summe IV CDRom",
-        9012: "Summe IV DVD",
-        9013: "Summe IV MedienKomb",
-        9014: "Summe IV eMedien",
-        9015: "Summe Verschiedenes",
-    }
-    return (systematik_descriptions,)
+    # """
+    # Transform cumulative data files to absolute values.
+    # This function processes the cumulative data files and
+    # saves them as absolute value files.
+    # """
 
+    # transform_files = [
+    #     "2017-kummulativ.csv",
+    #     "2018-kummulativ.csv",
+    #     "2019-kummulativ.csv",
+    #     "2020-kummulativ.csv",
+    #     "2021-kummulativ.csv",
+    #     "2022-kummulativ.csv",
+    #     "2023-kummulativ.csv",
+    #     "2024-kummulativ.csv",
+    # ]
 
-@app.cell
-def _(mo, pd):
-    files = [
-        "2017-absolut.csv",
-        "2018-absolut.csv",
-        "2019-absolut.csv",
-        "2020-absolut.csv",
-        "2021-absolut.csv",
-        "2022-absolut.csv",
-        "2023-absolut.csv",
-        "2024-absolut.csv",
-    ]
+    # # Track processed files
+    # processed_output_files = []
+    # transform_cols = ["Entleihungen", "Besucher", "aktivierte Ausweise"]
+    # last_df = None
 
-    try:
-        df = pd.concat(
-            [
-                pd.read_csv(
-                    mo.notebook_location() / "public" / file,
-                    dtype={
-                        "Besucher": "Int64",
-                        "Entleihungen": "Int64",
-                        "aktivierte Ausweise": "Int64",
-                    },
-                    parse_dates=["Zeitraum"],
-                    index_col="Zeitraum",
-                )
-                for file in files
-            ]
-        )
+    # # Process each file to create absolute value files if they don't exist
+    # for curr_file in transform_files:
+    #     output_file = f"{curr_file[:4]}-absolut.csv"
+    #     processed_output_files.append(output_file)
 
-    except:
-        df = pd.concat(
-            [
-                pd.read_csv(
-                    f"https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/{file}",
-                    dtype={
-                        "Besucher": "Int64",
-                        "Entleihungen": "Int64",
-                        "aktivierte Ausweise": "Int64",
-                    },
-                    parse_dates=["Zeitraum"],
-                    index_col="Zeitraum",
-                )
-                for file in files
-            ]
-        )
-    return df, files
+    #     # Check if file already exists (avoiding reprocessing)
+    #     try:
+    #         # Load cumulative data
+    #         last_df = load_file(curr_file, parse_dates=["Zeitraum"])
+
+    #         # Calculate absolute values per library
+    #         last_df[transform_cols] = (
+    #             last_df.groupby("Bibliothek")[transform_cols]
+    #             .diff()
+    #             .fillna(last_df[transform_cols])
+    #         )
+
+    #         # Format output and save
+    #         last_df["Zeitraum"] = last_df["Zeitraum"].dt.strftime("%Y-%m")
+    #         last_df.sort_values(["Zeitraum", "Bibliothek"]).to_csv(
+    #             mo.notebook_location() / "public" / output_file,
+    #             index=False,
+    #             encoding="utf-8",
+    #         )
+    #         print(f"Generated {output_file}")
+    #     except Exception as e:
+    #         print(f"Error processing {curr_file}: {e}")
+
+    # Return all variables needed by other cells
+    # return (
+    #     curr_file,
+    #     last_df,
+    #     output_file,
+    #     processed_output_files,
+    #     transform_cols,
+    #     transform_files,
+    # )
+    return
 
 
 @app.cell
@@ -200,7 +132,7 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(df, mo):
+def _(mo, monthly_df):
     bibliotheken = [
         "Böhlitz-Ehrenberg",
         "Fahrbibliothek",
@@ -264,8 +196,8 @@ def _(df, mo):
     zeitfilter = mo.ui.date_range(
         value=(
             (
-                df.index.min().strftime("%Y-%m-%d"),
-                df.index.max().strftime("%Y-%m-%d"),
+                monthly_df.index.min().strftime("%Y-%m-%d"),
+                monthly_df.index.max().strftime("%Y-%m-%d"),
             )
         )
     )
@@ -309,8 +241,9 @@ def _(
     alt,
     auflösung,
     bibliotheks_auswahl,
-    df,
     dimension,
+    mo,
+    monthly_df,
     online_auswahl,
     pd,
     trendlinie,
@@ -318,15 +251,15 @@ def _(
     zeitfilter,
 ):
     # Filter data for libraries and online services
-    library_data = df[
-        (df.index >= zeitfilter.value[0].strftime("%Y-%m-%d"))
-        & (df.index <= zeitfilter.value[1].strftime("%Y-%m-%d"))
-        & df["Bibliothek"].isin(bibliotheks_auswahl.value)
+    library_data = monthly_df[
+        (monthly_df.index >= zeitfilter.value[0].strftime("%Y-%m-%d"))
+        & (monthly_df.index <= zeitfilter.value[1].strftime("%Y-%m-%d"))
+        & monthly_df["Bibliothek"].isin(bibliotheks_auswahl.value)
     ]
-    online_data = df[
-        (df.index >= zeitfilter.value[0].strftime("%Y-%m-%d"))
-        & (df.index <= zeitfilter.value[1].strftime("%Y-%m-%d"))
-        & df["Bibliothek"].isin(online_auswahl.value)
+    online_data = monthly_df[
+        (monthly_df.index >= zeitfilter.value[0].strftime("%Y-%m-%d"))
+        & (monthly_df.index <= zeitfilter.value[1].strftime("%Y-%m-%d"))
+        & monthly_df["Bibliothek"].isin(online_auswahl.value)
     ]
 
     # Aggregate loan counts by month for libraries and online services
@@ -437,10 +370,12 @@ def _(
         else:
             final_chart = chart
 
-    final_chart.properties(
+    final_chart = final_chart.properties(
         title=f"{dimension.value} für Bibliotheken und Online-Dienste",
         width=850,
     )
+
+    mo.center(final_chart)
     return (
         chart,
         final_chart,
@@ -474,6 +409,85 @@ def _(mo):
     return
 
 
+@app.cell(hide_code=True)
+def _():
+    systematik_descriptions = {
+        79: "ePaper (Genios)",
+        80: "eBook (Onleihe)",
+        81: "eAudio (Onleihe)",
+        82: "eVideo (Onleihe)",
+        83: "eMusic (Onleihe)",
+        84: "ePaper (Onleihe)",
+        85: "eMagazin (Onleihe)",
+        86: "eVideo (Filmfriend)",
+        87: "eAudio (Overdrive)",
+        88: "eVideo (Overdrive)",
+        89: "eBook (Overdrive)",
+        100: "Belletristik Erw",
+        110: "Belletristik Jugend",
+        120: "Belletristik REG",
+        130: "Belletristik Kinder",
+        140: "Belletristik Musik",
+        200: "CD Belletristik",
+        210: "CD KAB",
+        220: "CD Kinder",
+        230: "CD Jugend",
+        240: "CD Musik",
+        300: "CD-Rom Belletristik",
+        310: "CD-Rom KAB",
+        320: "CD-Rom Jugend",
+        330: "CD-Rom Kinder",
+        340: "CD-Rom Musik",
+        400: "DVD Belletristik",
+        410: "DVD KAB",
+        420: "DVD Jugend",
+        430: "DVD Kinder",
+        440: "DVD Musik",
+        500: "eMedium Erwachsene",
+        510: "eMedium Kinder",
+        520: "eMedium Jugend",
+        540: "eMedium Musik",
+        600: "Fachliteratur Erwachsene",
+        610: "Fachliteratur Jugend",
+        620: "Fachliteratur Musik",
+        630: "Fachliteratur Kinder",
+        640: "Fachlit Erwachsene Demokratie",
+        800: "Medienkombination Belletristik Erw.",
+        810: "Medienkombination KAB",
+        820: "Medienkombination Musik",
+        830: "Medienkombination REG",
+        840: "Medienkombination Kinder",
+        900: "Noten",
+        1000: "Spiele",
+        1100: "Videokassette",
+        1200: "Zeitschriften Erwachsene",
+        1210: "Zeitschriften Jugend",
+        1220: "Zeitschriften Kinder",
+        1230: "Zeitschriften Musik",
+        1300: "Dias",
+        1400: "Film",
+        1500: "Grafik (Artothek)",
+        1600: "Schallplatte",
+        1700: "Verschiedenes (außer Kibi + Mubi)",
+        1710: "Verschiedenes Mubi",
+        1720: "Verschiedenes Kibi",
+        1730: "Verschiedenes Gegenstand (BdD)",
+        1800: "TonbandKassette",
+        2000: "Online-Dokument",
+        9001: "Summe I (Belletristik)",
+        9002: "Summe II (Kinderliteratur)",
+        9003: "Summe III (Fachliteratur)",
+        9005: "Summe V (Zeitschriften)",
+        9010: "Summe IV CD",
+        9011: "Summe IV CDRom",
+        9012: "Summe IV DVD",
+        9013: "Summe IV MedienKomb",
+        9014: "Summe IV eMedien",
+        9015: "Summe Verschiedenes",
+    }
+    return (systematik_descriptions,)
+
+
 @app.cell
 def _(mo):
     mo.md(
@@ -491,82 +505,58 @@ def _(mo):
 
 
 @app.cell
-def _(mo, pd):
+def _(load_file, pd):
     jahre = ["2023", "2024"]
 
-    try:
-        buchdaten = pd.read_csv(
-            mo.notebook_location() / "public" / "buchdaten_gesamt_reduce.csv",
-            usecols=[
-                "Zweigstelle",
-                "Abteilung",
-                "Geistiger Schöpfer",
-                "Gesamt",
-                "2024",
-                "2023",
-                "Titel",
-                "Mediennummer",
-                "Erscheinungsjahr",
-                "Systematik",
-                "katkey",
-            ],
-            low_memory=False,
-        )
+    # Define column selection for efficiency
+    buchdaten_columns = [
+        "Zweigstelle",
+        "Abteilung",
+        "Geistiger Schöpfer",
+        "Gesamt",
+        "2024",
+        "2023",
+        "Titel",
+        "Mediennummer",
+        "Erscheinungsjahr",
+        "Systematik",
+        "katkey",
+    ]
 
-        bestelldaten = pd.concat(
-            [
-                pd.read_csv(
-                    mo.notebook_location() / "public" / f"bestelldaten_{jahr}.csv",
-                    sep=";",
-                    encoding="latin_1",
-                    decimal=",",
-                    thousands=".",
-                    low_memory=False,
-                )
-                for jahr in jahre
-            ]
-        )
+    # Load both datasets with consolidated function
+    buchdaten = load_file(
+        "buchdaten_gesamt_reduce.csv",
+        usecols=buchdaten_columns,
+        low_memory=False,
+    )
 
-    except:
-        buchdaten = pd.read_csv(
-            "https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/buchdaten_gesamt_reduce.csv",
-            usecols=[
-                "Zweigstelle",
-                "Abteilung",
-                "Geistiger Schöpfer",
-                "Gesamt",
-                "2024",
-                "2023",
-                "Titel",
-                "Mediennummer",
-                "Erscheinungsjahr",
-                "Systematik",
-                "katkey",
-            ],
-            low_memory=False,
-        )
+    # Load and concatenate bestelldaten in one step
+    bestelldaten = pd.concat(
+        [
+            load_file(
+                f"bestelldaten_{jahr}.csv",
+                sep=";",
+                encoding="latin_1",
+                decimal=",",
+                thousands=".",
+                low_memory=False,
+            )
+            for jahr in jahre
+        ]
+    )
 
-        bestelldaten = pd.concat(
-            [
-                pd.read_csv(
-                    f"https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/bestelldaten_{jahr}.csv",
-                    sep=";",
-                    encoding="latin_1",
-                    decimal=",",
-                    thousands=".",
-                    low_memory=False,
-                )
-                for jahr in jahre
-            ]
-        )
-
+    # Process buchdaten in a consolidated manner
     buchdaten["exemplare"] = buchdaten.groupby("katkey")["katkey"].transform(
         "count"
     )
-    bestelldaten["Bestellpreis"] = pd.to_numeric(
-        bestelldaten["Bestellpreis"], errors="ignore"
-    )
     buchdaten["2023_2024"] = buchdaten["2023"] + buchdaten["2024"]
+
+    # Convert to numeric upfront to avoid mixed type operations
+    bestelldaten["Bestellpreis"] = pd.to_numeric(
+        bestelldaten["Bestellpreis"], errors="coerce"
+    )
+
+    # Group buchdaten by katkey
     buchdaten_grouped = buchdaten.groupby("katkey", as_index=False).agg(
         {
             "Geistiger Schöpfer": "first",
@@ -580,23 +570,80 @@ def _(mo, pd):
         }
     )
 
-
+    # Group bestelldaten by katkey
     bestelldaten_grouped = bestelldaten.groupby("katkey", as_index=False).agg(
         {"EXEMPLARANZ": "sum", "Bestellpreis": "sum"}
     )
 
+    # Merge datasets once
     gesamtdaten = pd.merge(
         buchdaten_grouped, bestelldaten_grouped, on="katkey", how="left"
     )
     gesamtdaten = gesamtdaten[gesamtdaten["katkey"] != 1952225]
-    # gesamtdaten.dropna(subset=["Bestellpreis"], inplace=True)
+
+    # FIXED: Calculate Durchschnittspreis_pro_Exemplar more comprehensively
+    # Instead of restricting to only rows where EXEMPLARANZ > 0, we need a different approach
+
+    # Step 1: Calculate the per-exemplar price where we have EXEMPLARANZ data
+    valid_exemplar_mask = gesamtdaten["EXEMPLARANZ"] > 0
+
+    # For valid rows, calculate price per exemplar
+    gesamtdaten.loc[valid_exemplar_mask, "Durchschnittspreis_pro_Exemplar"] = (
+        gesamtdaten.loc[valid_exemplar_mask, "Bestellpreis"]
+        / gesamtdaten.loc[valid_exemplar_mask, "EXEMPLARANZ"]
+    )
+
+    # Step 2: For rows without valid EXEMPLARANZ, calculate a default price
+    # This better matches the original calculation logic
+
+    # Get the average price per category
+    systematik_preise = (
+        gesamtdaten[valid_exemplar_mask]
+        .groupby("Systematik")["Durchschnittspreis_pro_Exemplar"]
+        .mean()
+    )
+
+    # Apply this average to rows with missing prices
+    for systematik, preis in systematik_preise.items():
+        systematik_mask = (gesamtdaten["Systematik"] == systematik) & (
+            ~valid_exemplar_mask
+        )
+        gesamtdaten.loc[systematik_mask, "Durchschnittspreis_pro_Exemplar"] = preis
+
+    # Fill any remaining NAs with overall mean price
+    overall_mean_price = gesamtdaten.loc[
+        valid_exemplar_mask, "Durchschnittspreis_pro_Exemplar"
+    ].mean()
+    gesamtdaten["Durchschnittspreis_pro_Exemplar"] = gesamtdaten[
+        "Durchschnittspreis_pro_Exemplar"
+    ].fillna(overall_mean_price)
+
+    # Calculate average price per systematic group
+    gesamtdaten["Durchschnittlicher_Einzelbestellpreis"] = gesamtdaten.groupby(
+        "Systematik"
+    )["Durchschnittspreis_pro_Exemplar"].transform("mean")
+
+    # Budget calculation
+    gesamtdaten["budget_hochrechnung"] = (
+        gesamtdaten["Durchschnittlicher_Einzelbestellpreis"]
+        * gesamtdaten["exemplare"]
+    )
+
+    # Return all needed variables for subsequent cells
     return (
         bestelldaten,
         bestelldaten_grouped,
         buchdaten,
+        buchdaten_columns,
         buchdaten_grouped,
         gesamtdaten,
         jahre,
+        overall_mean_price,
+        preis,
+        systematik,
+        systematik_mask,
+        systematik_preise,
+        valid_exemplar_mask,
     )
 
 
@@ -607,41 +654,30 @@ def _(gesamtdaten):
             "exemplare": "sum",
             "Gesamt": "sum",
             "2023_2024": "sum",
+            "budget_hochrechnung": "sum",
             "Bestellpreis": "sum",
         }
     )
-    umsatz_systematik["Umschlag"] = (
+    umsatz_systematik["Umschlag 2023/24"] = (
         umsatz_systematik["2023_2024"] / umsatz_systematik["exemplare"] / 2
     )
-    # umsatz_systematik["Preis pro Entleihung"] = (
-    #     umsatz_systematik["Bestellpreis"] / umsatz_systematik["2023_2024"]
-    # )
+    umsatz_systematik["Preis pro Entleihung"] = (
+        umsatz_systematik["budget_hochrechnung"] / umsatz_systematik["Gesamt"]
+    )
     return (umsatz_systematik,)
-
-
-@app.cell
-def _(umsatz_systematik):
-    umsatz_systematik
-    return
-
-
-@app.cell
-def _(gesamtdaten):
-    gesamtdaten[gesamtdaten["Systematik"] == 600]["Gesamt"].sum()
-    return
 
 
 @app.cell
 def _(mo):
     vergleichswert = mo.ui.dropdown(
         {
-            "Umschlag": "Umschlag",
+            "Umschlag 2023/24": "Umschlag 2023/24",
             "Entleihungen 2023/2024 ": "2023_2024",
             "Gesamtentleihungen": "Gesamt",
-            # "Preis pro Entleihung": "Preis pro Entleihung",
+            "Preis pro Entleihung": "Preis pro Entleihung",
             "Exemplare im Bestand": "exemplare",
         },
-        value="Umschlag",
+        value="Umschlag 2023/24",
     )
     mo.vstack(
         [
@@ -655,7 +691,14 @@ def _(mo):
 
 
 @app.cell
-def _(alt, pd, systematik_descriptions, umsatz_systematik, vergleichswert):
+def _(
+    alt,
+    mo,
+    pd,
+    systematik_descriptions,
+    umsatz_systematik,
+    vergleichswert,
+):
     # Get top 10 by Bestellpreis
     top_10 = umsatz_systematik.sort_values("Bestellpreis", ascending=False).head(
         10
@@ -756,7 +799,7 @@ def _(alt, pd, systematik_descriptions, umsatz_systematik, vergleichswert):
         }
     )
 
-    combined_chart
+    mo.center(combined_chart)
     return (
         bestellpreis_chart,
         bestellpreis_max,
@@ -785,20 +828,21 @@ def _(mo):
 
 
 @app.cell
-def _(mo, pd):
-    try:
-        onleihe = pd.read_csv(mo.notebook_location() / "public" / "onleihe.csv")
-    except:
-        onleihe = pd.read_csv(
-            "https://raw.githubusercontent.com/a-wendler/bestandskonferenz/refs/heads/main/bestandskonferenz/apps/public/onleihe.csv"
-        )
+def _(load_file):
+    # Load Onleihe data with consolidated function
+    onleihe = load_file("onleihe.csv")
 
+    # Perform all data transformations in a single block
     onleihe["onleihe_2023_2024"] = (
         onleihe["Ausleihen 2023"] + onleihe["Ausleihen 2024"]
     )
     onleihe["Kategorie"] = onleihe["Kategorie"].str.split(" / ").str[0]
-    onleihe["Bestellpreis"] = onleihe["Einzelpreis"] * onleihe["Bestand 2024"]
+    onleihe["Bestellpreis"] = (
+        onleihe["Einzelpreis"] * onleihe["Bestand 2024"] * 1.2
+    )
+    onleihe["Bestand 2024"] = onleihe["Bestand 2024"] * 1.2
 
+    # Group by category once
     onleihe_kategorien = onleihe.groupby("Kategorie").agg(
         {
             "Bestand 2024": "sum",
@@ -807,17 +851,21 @@ def _(mo, pd):
             "Bestellpreis": "sum",
         }
     )
+
+    # Apply calculated fields at once
     onleihe_kategorien["Umschlag 2023/2024"] = (
         onleihe_kategorien["onleihe_2023_2024"]
         / onleihe_kategorien["Bestand 2024"]
         * 0.75
     )
 
-    onleihe_kategorien["Preis pro Entleihung"] = (
-        onleihe_kategorien["Bestellpreis"]
-        / onleihe_kategorien["onleihe_2023_2024"]
+    # Avoid division by zero errors
+    onleihe_valid_rows = onleihe_kategorien["onleihe_2023_2024"] > 0
+    onleihe_kategorien.loc[onleihe_valid_rows, "Preis pro Entleihung"] = (
+        onleihe_kategorien.loc[onleihe_valid_rows, "Bestellpreis"]
+        / onleihe_kategorien.loc[onleihe_valid_rows, "onleihe_2023_2024"]
     )
-    return onleihe, onleihe_kategorien
+    return onleihe, onleihe_kategorien, onleihe_valid_rows
 
 
 @app.cell
@@ -843,7 +891,7 @@ def _(mo):
 
 
 @app.cell
-def _(alt, onleihe_kategorien, onleihe_vergleichswert, pd):
+def _(alt, mo, onleihe_kategorien, onleihe_vergleichswert, pd):
     # Create a new DataFrame for visualization
     onleihe_chart_data = pd.melt(
         onleihe_kategorien.reset_index(),
@@ -921,12 +969,12 @@ def _(alt, onleihe_kategorien, onleihe_vergleichswert, pd):
         ),
     ).properties(
         title={
-            "text": f"Bestellpreis vs {onleihe_vergleichswert.value}",
+            "text": f"Bestellpreis & {onleihe_vergleichswert.value}",
             "fontSize": 16,
         }
     )
 
-    onleihe_combined_chart
+    mo.center(onleihe_combined_chart)
     return (
         onleihe_bestellpreis_chart,
         onleihe_bestellpreis_max,
@@ -978,54 +1026,105 @@ def _(mo):
 
 @app.cell
 def _(anzahl_bestleiher, gesamtdaten, onleihe, pd):
-    # Create a proper copy of the merged DataFrame first
+    # Filter data before merge to reduce memory usage
+    # Remove hörbücher from both datasets as mentioned in the explanation
+    gesamtdaten_filtered = gesamtdaten[gesamtdaten["Systematik"] != 200].copy()
+    onleihe_filtered = onleihe[onleihe["Format"] != "eAudio"].copy()
+
+    # Create a proper copy of the merged DataFrame with only needed columns
+    # This reduces memory usage by not carrying all columns forward
     comparison_df = pd.merge(
-        gesamtdaten[gesamtdaten["Systematik"] != 200],
-        onleihe[onleihe["Format"] != "eAudio"],
+        gesamtdaten_filtered[
+            [
+                "Titel",
+                "Gesamt",
+                "exemplare",
+                "Systematik",
+                "budget_hochrechnung",
+                "Bestellpreis",
+                "EXEMPLARANZ",
+            ]
+        ],
+        onleihe_filtered[
+            ["Titel", "Ausleihen gesamt", "Bestand 2024", "Bestellpreis"]
+        ],
         on="Titel",
         suffixes=("_gesamtdaten", "_onleihe"),
-    ).copy()
-
-    comparison_df.rename(
-        columns={
-            "Gesamt": "Loans_gesamtdaten",  # vorher Gesamt
-            "Ausleihen gesamt": "Loans_onleihe",
-            "exemplare": "Copies_gesamtdaten",
-            "Bestand 2024": "Copies_onleihe",
-            "Bestellpreis_gesamtdaten": "Price_gesamtdaten",
-            "Bestellpreis_onleihe": "Price_onleihe",
-        },
-        inplace=True,
     )
 
-    # Calculate price per loan using .loc for explicit assignment
-    comparison_df.loc[:, "Price_per_Loan_gesamtdaten"] = (
-        comparison_df["Price_gesamtdaten"] / comparison_df["Loans_gesamtdaten"]
-    )
-    comparison_df.loc[:, "Price_per_Loan_onleihe"] = (
-        comparison_df["Price_onleihe"] / comparison_df["Loans_onleihe"]
+    # Rename columns in a single step
+    comparison_column_mapping = {
+        "Gesamt": "Loans_gesamtdaten",
+        "Ausleihen gesamt": "Loans_onleihe",
+        "exemplare": "Copies_gesamtdaten",
+        "Bestand 2024": "Copies_onleihe",
+        "Bestellpreis_gesamtdaten": "Price_gesamtdaten",
+        "Bestellpreis_onleihe": "Price_onleihe",
+    }
+    comparison_df.rename(columns=comparison_column_mapping, inplace=True)
+
+    # Remove data with missing information
+    comparison_df = comparison_df[comparison_df["Systematik"] != 200]
+
+    # Create mask for valid data to avoid division by zero
+    comparison_valid_gesamtdaten = comparison_df["Loans_gesamtdaten"] > 0
+    comparison_valid_onleihe = comparison_df["Loans_onleihe"] > 0
+
+    # Calculate price per loan in a safe way
+    comparison_df.loc[
+        comparison_valid_gesamtdaten, "Price_per_Loan_gesamtdaten"
+    ] = (
+        comparison_df.loc[comparison_valid_gesamtdaten, "budget_hochrechnung"]
+        / comparison_df.loc[comparison_valid_gesamtdaten, "Loans_gesamtdaten"]
     )
 
-    comparison_df.loc[:, "Loans Sum"] = (
+    comparison_df.loc[comparison_valid_gesamtdaten, "Price_per_Loan_real"] = (
+        comparison_df.loc[comparison_valid_gesamtdaten, "Price_gesamtdaten"]
+        / comparison_df.loc[comparison_valid_gesamtdaten, "Loans_gesamtdaten"]
+    )
+
+    comparison_df.loc[comparison_valid_onleihe, "Price_per_Loan_onleihe"] = (
+        comparison_df.loc[comparison_valid_onleihe, "Price_onleihe"]
+        / comparison_df.loc[comparison_valid_onleihe, "Loans_onleihe"]
+    )
+
+    # Calculate total loans and filter for top titles
+    comparison_df["Loans Sum"] = (
         comparison_df["Loans_onleihe"] + comparison_df["Loans_gesamtdaten"]
     )
     comparison_df = comparison_df.nlargest(anzahl_bestleiher.value, "Loans Sum")
 
-    # korrektur des eingesetzten preises, der auch auf altexemplare hochgerechnet wird, die vor 2023 beschafft wurden
-    mask = (comparison_df["Copies_gesamtdaten"] > comparison_df["EXEMPLARANZ"]) & (
-        comparison_df["Price_gesamtdaten"] != 0
-    )
+    # Price correction for items acquired before 2023 - as per original code
+    # Create mask and apply correction in one pass
+    comparison_mask = (
+        comparison_df["Copies_gesamtdaten"] > comparison_df["EXEMPLARANZ"]
+    ) & (comparison_df["Price_gesamtdaten"] != 0)
 
-    # Anwenden der Berechnung nur auf Zeilen, die die Bedingung erfüllen
-    comparison_df.loc[mask, "Price_gesamtdaten"] = comparison_df.loc[
-        mask, "Copies_gesamtdaten"
-    ] * (
-        comparison_df.loc[mask, "Price_gesamtdaten"]
-        / comparison_df.loc[mask, "EXEMPLARANZ"]
-    )
+    if (
+        comparison_mask.any()
+    ):  # Only apply if there are rows matching the condition
+        comparison_df.loc[comparison_mask, "Price_gesamtdaten"] = (
+            comparison_df.loc[comparison_mask, "Copies_gesamtdaten"]
+            * (
+                comparison_df.loc[comparison_mask, "Price_gesamtdaten"]
+                / comparison_df.loc[comparison_mask, "EXEMPLARANZ"]
+            )
+        )
 
-    comparison_df = comparison_df[comparison_df["Systematik"] != 200]
-    return comparison_df, mask
+    # Final filtering to remove rows with zero prices
+    comparison_df = comparison_df[comparison_df["Price_gesamtdaten"] != 0]
+
+    # Drop unnecessary columns to save memory
+    comparison_df = comparison_df.drop(columns=["EXEMPLARANZ"], errors="ignore")
+    return (
+        comparison_column_mapping,
+        comparison_df,
+        comparison_mask,
+        comparison_valid_gesamtdaten,
+        comparison_valid_onleihe,
+        gesamtdaten_filtered,
+        onleihe_filtered,
+    )
 
 
 @app.cell
@@ -1035,7 +1134,7 @@ def _(mo):
 
 
 @app.cell
-def _(alt, comparison_df, pd):
+def _(alt, comparison_df, mo, pd):
     # Calculate the difference between e-book loans and physical book loans
     comparison_df["Loan_Difference"] = (
         comparison_df["Loans_onleihe"] - comparison_df["Loans_gesamtdaten"]
@@ -1102,7 +1201,7 @@ def _(alt, comparison_df, pd):
         .encode(x="x", y="y")
     )
 
-    loans_scatter + diagonal
+    mo.center(loans_scatter + diagonal)
     return above_line, below_line, diagonal, loans_scatter, on_line
 
 
@@ -1121,14 +1220,6 @@ def _(mo):
         Die Farbe der Punkte zeigt den __Preis pro Ausleihe__.
         """
     )
-    return
-
-
-@app.cell
-def _(comparison_df):
-    # Korrektur der Exemplarzahlen in der Onleihe um Lizenzverlängerungen abzubilden
-
-    comparison_df["Copies_onleihe"] = comparison_df["Copies_onleihe"] * 1.2
     return
 
 
@@ -1154,7 +1245,7 @@ def _(alt, comparison_df):
 
     # Create the scatter plot for physical books
     physical_plot = (
-        alt.Chart(comparison_df)
+        alt.Chart(comparison_df[comparison_df["Price_gesamtdaten"].notnull()])
         .mark_circle()
         .encode(
             x=alt.X(
@@ -1173,7 +1264,7 @@ def _(alt, comparison_df):
                 legend=alt.Legend(title="Gesamtpreis (€)"),
             ),
             color=alt.Color(
-                "Price_per_Loan_gesamtdaten:Q",
+                "Price_per_Loan_real:Q",
                 scale=alt.Scale(scheme="turbo"),
                 legend=alt.Legend(title="Preis pro Entleihung (€)", format=".2f"),
             ),
@@ -1187,7 +1278,7 @@ def _(alt, comparison_df):
                     format=".2f",
                 ),
                 alt.Tooltip(
-                    "Price_per_Loan_gesamtdaten",
+                    "Price_per_Loan_real",
                     title="Preis pro Entleihung €",
                     format=".2f",
                 ),
@@ -1232,11 +1323,6 @@ def _(alt, comparison_df):
                 alt.Tooltip(
                     "Price_onleihe", title="Gesamtpreis digital €", format="(.2f"
                 ),
-                alt.Tooltip(
-                    "Price_per_Loan_onleihe",
-                    title="Preis pro Entleihung €",
-                    format="(.2f",
-                ),
             ],
         )
         .properties(
@@ -1268,72 +1354,106 @@ def _(alt, comparison_df):
 
 @app.cell
 def _(anzahl_bestleiher, mo):
-    mo.md(f"""
+    mo.md(
+        f"""
     ## Zusammenfassung der {anzahl_bestleiher.value} Medien aus physischem Bestand und Onleihe
-          """)
+          """
+    )
     return
 
 
 @app.cell
 def _(comparison_df, pd):
-    # Aggregate sum for physical books
+    # Calculate aggregated metrics in a single step
     physical_summary = {
-        "Ausleihen 2023/24": comparison_df["Loans_gesamtdaten"].sum(),
+        "Ausleihen gesamt": comparison_df["Loans_gesamtdaten"].sum(),
         "Exemplare": comparison_df["Copies_gesamtdaten"].sum(),
-        "Gesamtpreis": comparison_df["Price_gesamtdaten"].sum(),
+        "Gesamtpreis": comparison_df["budget_hochrechnung"].sum(),
     }
 
-    # Aggregate sum for e-books
     ebook_summary = {
-        "Ausleihen 2023/24": comparison_df["Loans_onleihe"].sum(),
+        "Ausleihen gesamt": comparison_df["Loans_onleihe"].sum(),
         "Exemplare": comparison_df["Copies_onleihe"].sum(),
         "Gesamtpreis": comparison_df["Price_onleihe"].sum(),
     }
 
-    # Create a DataFrame for the summary
+    # Create DataFrame directly with both columns
     summary_table = pd.DataFrame(
         {"Physischer Bestand": physical_summary, "E-Books": ebook_summary}
-    )
+    ).T
 
-    # Transpose the table for better readability
-    summary_table = summary_table.T
-
-    # Berechne Umschlag (Ausleihen / Exemplare)
-    summary_table["Umschlag"] = (
-        summary_table["Ausleihen 2023/24"] / summary_table["Exemplare"]
-    )
-
-    # Manuelle Anpassung des Umschlagwerts für E-Books - Multiplikation mit 0,75
-    summary_table.loc["E-Books", "Umschlag"] *= 0.75
-
-    # Berechne Preis pro Entleihung (Gesamtpreis / Ausleihen)
+    # Calculate price per loan (safely handling division)
     summary_table["Preis pro Entleihung"] = (
-        summary_table["Gesamtpreis"] / summary_table["Ausleihen 2023/24"]
+        summary_table["Gesamtpreis"] / summary_table["Ausleihen gesamt"]
     )
 
-    # Format the numbers for German conventions
+
+    # Define formatting function
+    def format_summary_number(x, is_price=False):
+        if is_price:
+            return (
+                f"€ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            )
+        else:
+            return f"{x:,.0f}".replace(",", ".")
+
+
+    # Apply formatting
     summary_table["Gesamtpreis"] = summary_table["Gesamtpreis"].apply(
-        lambda x: f"€ {x:,.0f}".replace(",", "X")
-        .replace(".", ",")
-        .replace("X", ".")
+        lambda x: format_summary_number(x, is_price=True)
     )
-    summary_table["Ausleihen 2023/24"] = summary_table["Ausleihen 2023/24"].apply(
-        lambda x: f"{x:,.0f}".replace(",", ".")
+    summary_table["Ausleihen gesamt"] = summary_table["Ausleihen gesamt"].apply(
+        format_summary_number
     )
     summary_table["Exemplare"] = summary_table["Exemplare"].apply(
-        lambda x: f"{x:,.0f}".replace(",", ".")
-    )
-
-    # Formatiere die neuen Kennzahlen mit deutschen Zahlenkonventionen
-    summary_table["Umschlag"] = summary_table["Umschlag"].apply(
-        lambda x: f"{x:.2f}".replace(".", ",")
+        format_summary_number
     )
     summary_table["Preis pro Entleihung"] = summary_table[
         "Preis pro Entleihung"
     ].apply(lambda x: f"€ {x:.2f}".replace(".", ","))
 
     summary_table
-    return ebook_summary, physical_summary, summary_table
+    # Return all variables for marimo to track
+    return (
+        ebook_summary,
+        format_summary_number,
+        physical_summary,
+        summary_table,
+    )
+
+
+@app.cell
+def _(load_file, pd):
+    # Define file list for monthly data loading
+    monthly_files = [
+        "2017-absolut.csv",
+        "2018-absolut.csv",
+        "2019-absolut.csv",
+        "2020-absolut.csv",
+        "2021-absolut.csv",
+        "2022-absolut.csv",
+        "2023-absolut.csv",
+        "2024-absolut.csv",
+    ]
+
+    # Load all files and concatenate at once
+    # Use Int64 dtype for nullable integers and parse dates for Zeitraum
+    monthly_df = pd.concat(
+        [
+            load_file(
+                file,
+                dtype={
+                    "Besucher": "Int64",
+                    "Entleihungen": "Int64",
+                    "aktivierte Ausweise": "Int64",
+                },
+                parse_dates=["Zeitraum"],
+                index_col="Zeitraum",
+            )
+            for file in monthly_files
+        ]
+    )
+    return monthly_df, monthly_files
 
 
 if __name__ == "__main__":
