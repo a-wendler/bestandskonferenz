@@ -52,7 +52,7 @@ def _(mo, pd):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
     systematik_descriptions = {
         79: "ePaper (Genios)",
@@ -589,7 +589,7 @@ def _(mo, pd):
         buchdaten_grouped, bestelldaten_grouped, on="katkey", how="left"
     )
     gesamtdaten = gesamtdaten[gesamtdaten["katkey"] != 1952225]
-    gesamtdaten.dropna(subset=["Bestellpreis"], inplace=True)
+    # gesamtdaten.dropna(subset=["Bestellpreis"], inplace=True)
     return (
         bestelldaten,
         bestelldaten_grouped,
@@ -613,10 +613,22 @@ def _(gesamtdaten):
     umsatz_systematik["Umschlag"] = (
         umsatz_systematik["2023_2024"] / umsatz_systematik["exemplare"] / 2
     )
-    umsatz_systematik["Preis pro Entleihung"] = (
-        umsatz_systematik["Bestellpreis"] / umsatz_systematik["2023_2024"]
-    )
+    # umsatz_systematik["Preis pro Entleihung"] = (
+    #     umsatz_systematik["Bestellpreis"] / umsatz_systematik["2023_2024"]
+    # )
     return (umsatz_systematik,)
+
+
+@app.cell
+def _(umsatz_systematik):
+    umsatz_systematik
+    return
+
+
+@app.cell
+def _(gesamtdaten):
+    gesamtdaten[gesamtdaten["Systematik"] == 600]["Gesamt"].sum()
+    return
 
 
 @app.cell
@@ -624,9 +636,9 @@ def _(mo):
     vergleichswert = mo.ui.dropdown(
         {
             "Umschlag": "Umschlag",
-            "Gesamtentleihungen": "Gesamt",
             "Entleihungen 2023/2024 ": "2023_2024",
-            "Preis pro Entleihung": "Preis pro Entleihung",
+            "Gesamtentleihungen": "Gesamt",
+            # "Preis pro Entleihung": "Preis pro Entleihung",
             "Exemplare im Bestand": "exemplare",
         },
         value="Umschlag",
@@ -667,10 +679,15 @@ def _(alt, pd, systematik_descriptions, umsatz_systematik, vergleichswert):
     sort_order = top_10_reset["Systematik"].tolist()
 
     # Create a DataFrame for the middle chart with codes and descriptions
-    middle_data = pd.DataFrame({
-        'Systematik': sort_order,
-        'Label': [f"{code} - {systematik_descriptions.get(code, 'Unbekannt')}" for code in sort_order]
-    })
+    middle_data = pd.DataFrame(
+        {
+            "Systematik": sort_order,
+            "Label": [
+                f"{code} - {systematik_descriptions.get(code, 'Unbekannt')}"
+                for code in sort_order
+            ],
+        }
+    )
 
     # Create separate charts for each metric with appropriate domains
     bestellpreis_chart = (
@@ -719,8 +736,10 @@ def _(alt, pd, systematik_descriptions, umsatz_systematik, vergleichswert):
             alt.Y("Systematik:N", sort=sort_order).axis(None),
             alt.Text("Label:N"),
         )
-        .mark_text(align='center')
-        .properties(width=200, height=400)  # Increased width to accommodate longer text
+        .mark_text(align="center")
+        .properties(
+            width=200, height=400
+        )  # Increased width to accommodate longer text
     )
 
     # Combine the charts
